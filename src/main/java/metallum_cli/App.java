@@ -1,4 +1,4 @@
-package marco;
+package metallum_cli;
 
 /**
  * Hello world!

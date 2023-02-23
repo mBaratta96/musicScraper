@@ -4,12 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>marco</groupId>
-    <artifactId>metallum-cli</artifactId>
+    <artifactId>music-scrapper</artifactId>
     <version>1.0</version>
 
-    <name>metallum-cli</name>
+    <name>marco</name>
     <!-- FIXME change it to the project's website -->
-    <url>http://www.example.com</url>
+    <url>https://github.com/mBaratta96/music_scrapper</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -79,7 +79,7 @@
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>3.1.0</version>
                     <configuration>
-                        <mainClass>marco.App</mainClass>
+                        <mainClass>metallum_cli.App</mainClass>
                     </configuration>
                 </plugin>
             </plugins>
