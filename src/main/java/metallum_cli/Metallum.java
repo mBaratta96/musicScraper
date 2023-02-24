@@ -16,7 +16,7 @@ public class Metallum {
     private static final String METALLUM_URL = "https://www.metal-archives.com/";
     private static final String BAND_URL = METALLUM_URL.concat("bands/");
 
-    private String getWebpage(String band) throws IOException {
+    private static String getWebpage(String band) throws IOException {
         String test_url = BAND_URL.concat(band);
         Document metallum_page = Jsoup.connect(test_url).get();
         Element discography = metallum_page.getElementById("band_disco");
@@ -24,21 +24,21 @@ public class Metallum {
         return complete_discography.attr("href");
     }
 
+    private static void printRowValues(Element row) {
+        Elements row_values = (row.getElementsByTag("td").size() > 0) ? row.getElementsByTag("td")
+                : row.getElementsByTag("th");
+        List<String> table_values = row_values.stream().map(value -> value.text()).toList();
+        System.out.format("%32s%32s%32s%32s\n", table_values.get(0), table_values.get(1),
+                table_values.get(2),
+                table_values.get(3));
+    }
+
     public static void main(String[] args) {
-        Metallum app = new Metallum();
         try {
-            String discography_url = app.getWebpage("Panphage");
+            String discography_url = Metallum.getWebpage("Panphage");
             Document discography_table = Jsoup.connect(discography_url).get();
             Elements table_rows = discography_table.getElementsByTag("tr");
-
-            table_rows.forEach(row -> {
-                Elements row_values = (row.getElementsByTag("td").size() > 0) ? row.getElementsByTag("td")
-                        : row.getElementsByTag("th");
-                List<String> table_values = row_values.stream().map(value -> value.text()).toList();
-                System.out.format("%32s%32s%32s%32s\n", table_values.get(0), table_values.get(1),
-                        table_values.get(2),
-                        table_values.get(3));
-            });
+            table_rows.forEach(Metallum::printRowValues);
         } catch (IOException e) {
             System.err.println(e);
             return;
