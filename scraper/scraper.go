@@ -6,24 +6,24 @@ import (
 	"github.com/gocolly/colly"
 )
 
-type table struct {
+type Table struct {
 	Name   string
 	Type   string
 	Year   string
 	Review string
 }
 
-func PrintRows() {
+func PrintRows() []Table {
 	c := colly.NewCollector()
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
 	})
 
+	rows := make([]Table, 0)
 	c.OnHTML("table.display.discog tbody", func(h *colly.HTMLElement) {
-		rows := make([]table, 0)
 		h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-			row := table{}
+			row := Table{}
 			h.ForEach(".album,.demo,.other,td a[href]", func(i int, h *colly.HTMLElement) {
 				switch i {
 				case 0:
@@ -38,8 +38,8 @@ func PrintRows() {
 			})
 			rows = append(rows, row)
 		})
-		fmt.Println(rows)
 	})
 
 	c.Visit("https://www.metal-archives.com/bands/Panphage/")
+	return rows
 }

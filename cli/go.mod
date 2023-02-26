@@ -1,13 +1,13 @@
-module music-scrapper
+module github.com/mBaratta96/music-scrapper/cli
 
 go 1.18
 
 require (
-	github.com/gocolly/colly v1.2.0 // indirect
+	github.com/charmbracelet/bubbles v0.15.0
+	github.com/charmbracelet/bubbletea v0.23.2
+	github.com/charmbracelet/lipgloss v0.6.0
 	github.com/mBaratta96/music-scrapper/scraper v0.0.0-00010101000000-000000000000
 )
-
-require github.com/mBaratta96/music-scrapper/cli v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
@@ -16,11 +16,9 @@ require (
 	github.com/antchfx/xmlquery v1.3.15 // indirect
 	github.com/antchfx/xpath v1.2.3 // indirect
 	github.com/aymanbagabas/go-osc52 v1.2.1 // indirect
-	github.com/charmbracelet/bubbles v0.15.0 // indirect
-	github.com/charmbracelet/bubbletea v0.23.2 // indirect
-	github.com/charmbracelet/lipgloss v0.6.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/gocolly/colly v1.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
@@ -43,6 +41,4 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 )
 
-replace github.com/mBaratta96/music-scrapper/scraper => ./scraper
-
-replace github.com/mBaratta96/music-scrapper/cli => ./cli
+replace github.com/mBaratta96/music-scrapper/scraper => ../scraper
