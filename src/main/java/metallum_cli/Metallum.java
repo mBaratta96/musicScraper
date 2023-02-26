@@ -30,8 +30,9 @@ public class Metallum {
     }
 
     public static void main(String[] args) {
+        String band = args[0];
         try {
-            String discography_url = Metallum.getWebpage("Panphage");
+            String discography_url = Metallum.getWebpage(band);
             Document discography_table = Jsoup.connect(discography_url).get();
             Elements table_rows = discography_table.getElementsByTag("tr");
             table_rows.forEach(Metallum::printRows);
