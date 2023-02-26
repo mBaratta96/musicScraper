@@ -1,12 +1,10 @@
-package main
+package scraper
 
 import (
 	"fmt"
 
 	"github.com/gocolly/colly"
 )
-
-// import "strings"
 
 type table struct {
 	Name   string
@@ -15,10 +13,9 @@ type table struct {
 	Review string
 }
 
-func main() {
+func PrintRows() {
 	c := colly.NewCollector()
 
-	// Find and visit all links
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
 	})

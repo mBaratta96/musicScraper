@@ -1,11 +1,8 @@
-module music-scrapper
+module github.com/mBaratta96/music-scrapper/scraper
 
 go 1.18
 
-require (
-	github.com/gocolly/colly v1.2.0 // indirect
-	github.com/mBaratta96/music-scrapper/scraper v0.0.0-00010101000000-000000000000
-)
+require github.com/gocolly/colly v1.2.0
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
@@ -23,5 +20,3 @@ require (
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 )
-
-replace github.com/mBaratta96/music-scrapper/scraper => ./scraper
