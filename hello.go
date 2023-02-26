@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/gocolly/colly"
 )
-
-// import "strings"
 
 type table struct {
 	Name   string
@@ -17,9 +16,11 @@ type table struct {
 func main() {
 	c := colly.NewCollector()
 
-	// Find and visit all links
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
-		e.Request.Visit(e.Attr("href"))
+		err := e.Request.Visit(e.Attr("href"))
+		if err != nil {
+			fmt.Println(err)
+		}
 	})
 
 	c.OnHTML("table.display.discog tbody", func(h *colly.HTMLElement) {
@@ -43,5 +44,8 @@ func main() {
 		fmt.Println(rows)
 	})
 
-	c.Visit("https://www.metal-archives.com/bands/Panphage/")
+	err := c.Visit("https://www.metal-archives.com/bands/Panphage/")
+	if err != nil {
+		fmt.Println(err)
+	}
 }
