@@ -10,7 +10,8 @@ import (
 )
 
 type model struct {
-	table table.Model
+	table    table.Model
+	is_album bool
 }
 
 var baseStyle = lipgloss.NewStyle().
@@ -43,7 +44,7 @@ func (m model) View() string {
 	return baseStyle.Render(m.table.View()) + "\n"
 }
 
-func PrintRows(rows []table.Row, columns []table.Column) int {
+func PrintRows(rows []table.Row, columns []table.Column, is_album bool) int {
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
@@ -63,7 +64,7 @@ func PrintRows(rows []table.Row, columns []table.Column) int {
 		Bold(false)
 	t.SetStyles(s)
 
-	p := tea.NewProgram(model{t})
+	p := tea.NewProgram(model{t, is_album})
 	m, err := p.Run()
 	if err != nil {
 		fmt.Println("Error running program:", err)
