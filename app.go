@@ -9,8 +9,8 @@ import (
 
 func main() {
 	search := os.Args[1]
-	rows, columns := scraper.FindBand(search)
-	cli.PrintRows(rows, columns)
-	rows, columns = scraper.PrintRows()
-	cli.PrintRows(rows, columns)
+	rows, columns, links := scraper.FindBand(search)
+	index := cli.PrintRows(rows, columns)
+	rows, columns = scraper.PrintRows(links[index])
+	_ = cli.PrintRows(rows, columns)
 }

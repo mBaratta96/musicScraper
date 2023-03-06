@@ -43,7 +43,7 @@ func (m model) View() string {
 	return baseStyle.Render(m.table.View()) + "\n"
 }
 
-func PrintRows(rows []table.Row, columns []table.Column) {
+func PrintRows(rows []table.Row, columns []table.Column) int {
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
@@ -63,10 +63,14 @@ func PrintRows(rows []table.Row, columns []table.Column) {
 		Bold(false)
 	t.SetStyles(s)
 
-	m := model{t}
-	if _, err := tea.NewProgram(m).Run(); err != nil {
+	p := tea.NewProgram(model{t})
+	m, err := p.Run()
+	if err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
-	fmt.Println(m.table.SelectedRow())
+	if m, ok := m.(model); ok {
+		return m.table.Cursor()
+	}
+	return -1
 }

@@ -10,13 +10,6 @@ import (
 	"github.com/gocolly/colly"
 )
 
-type Table struct {
-	Name   string
-	Type   string
-	Year   string
-	Review string
-}
-
 type SearchResponse struct {
 	Error                string     `json:"error"`
 	ITotalRecords        int        `json:"iTotalRecords"`
@@ -25,7 +18,7 @@ type SearchResponse struct {
 	AaData               [][]string `json:"aaData"`
 }
 
-func PrintRows() ([]table.Row, []table.Column) {
+func PrintRows(link string) ([]table.Row, []table.Column) {
 	c := colly.NewCollector()
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
@@ -52,13 +45,15 @@ func PrintRows() ([]table.Row, []table.Column) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
 	})
 
-	c.Visit("https://www.metal-archives.com/bands/Panphage/")
+	c.Visit(link)
 	return rows, columns
 }
 
-func FindBand(band string) ([]table.Row, []table.Column) {
+func FindBand(band string) ([]table.Row, []table.Column, []string) {
 	c := colly.NewCollector()
+
 	rows := make([]table.Row, 0)
+	links := make([]string, 0)
 	columns := []table.Column{
 		{Title: "Band Name", Width: 32},
 		{Title: "Genre", Width: 32},
@@ -66,7 +61,6 @@ func FindBand(band string) ([]table.Row, []table.Column) {
 	}
 
 	c.OnResponse(func(r *colly.Response) {
-		fmt.Println(string(r.Body))
 		var response SearchResponse
 		if err := json.Unmarshal(r.Body, &response); err != nil {
 			fmt.Println("Can not unmarshal JSON")
@@ -81,7 +75,9 @@ func FindBand(band string) ([]table.Row, []table.Column) {
 					if err != nil {
 						fmt.Println("EROOR")
 					}
-					row[0] = doc.Find("a").First().Text()
+					band := doc.Find("a").First()
+					row[0] = band.Text()
+					links = append(links, band.AttrOr("href", ""))
 				case 1:
 					row[1] = node
 				case 2:
@@ -96,5 +92,5 @@ func FindBand(band string) ([]table.Row, []table.Column) {
 	})
 
 	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", band))
-	return rows, columns
+	return rows, columns, links
 }
