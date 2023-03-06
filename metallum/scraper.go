@@ -1,4 +1,4 @@
-package scraper
+package metallum
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ type SearchResponse struct {
 	AaData               [][]string `json:"aaData"`
 }
 
-func PrintRows(link string) ([]table.Row, []table.Column) {
+func CreateRows(link string) ([]table.Row, []table.Column) {
 	c := colly.NewCollector()
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {

@@ -3,14 +3,17 @@ package main
 import (
 	"os"
 
-	"github.com/mBaratta96/music-scrapper/cli"
-	"github.com/mBaratta96/music-scrapper/scraper"
+	"github.com/mBaratta96/music-scrapper/metallum"
 )
 
 func main() {
 	search := os.Args[1]
-	rows, columns, links := scraper.FindBand(search)
-	index := cli.PrintRows(rows, columns)
-	rows, columns = scraper.PrintRows(links[index])
-	_ = cli.PrintRows(rows, columns)
+	rows, columns, links := metallum.FindBand(search)
+	if len(links) == 1 {
+		rows, columns = metallum.CreateRows(links[0])
+	} else {
+		index := metallum.PrintRows(rows, columns)
+		rows, columns = metallum.CreateRows(links[index])
+	}
+	_ = metallum.PrintRows(rows, columns)
 }
