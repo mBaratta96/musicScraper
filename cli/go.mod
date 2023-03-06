@@ -41,4 +41,3 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 )
 
-replace github.com/mBaratta96/music-scrapper/scraper => ../scraper

@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mBaratta96/music-scrapper/scraper"
 )
 
 type model struct {
@@ -31,12 +30,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.table.Focus()
 			}
-		case "q", "ctrl+c":
 			return m, tea.Quit
 		case "enter":
-			return m, tea.Batch(
-				tea.Println(m.table.SelectedRow()),
-			)
+			return m, tea.Quit
 		}
 	}
 	m.table, cmd = m.table.Update(msg)
@@ -47,17 +43,7 @@ func (m model) View() string {
 	return baseStyle.Render(m.table.View()) + "\n"
 }
 
-func PrintRows(metallumRows []scraper.Table) {
-	columns := []table.Column{
-		{Title: "Name", Width: 32},
-		{Title: "Type", Width: 32},
-		{Title: "Year", Width: 32},
-		{Title: "Review", Width: 32},
-	}
-	rows := []table.Row{}
-	for _, metallumRow := range metallumRows {
-		rows = append(rows, table.Row{metallumRow.Name, metallumRow.Type, metallumRow.Year, metallumRow.Review})
-	}
+func PrintRows(rows []table.Row, columns []table.Column) {
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
@@ -82,4 +68,5 @@ func PrintRows(metallumRows []scraper.Table) {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
+	fmt.Println(m.table.SelectedRow())
 }
