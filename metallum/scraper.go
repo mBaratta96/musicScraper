@@ -24,8 +24,26 @@ type SearchResponse struct {
 	AaData               [][]string `json:"aaData"`
 }
 
+func printMetadata(c *colly.Collector) {
+	metadata_keys := make([]string, 0)
+	metadata_values := make([]string, 0)
+	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
+		h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
+			metadata_keys = append(metadata_keys, h.Text)
+		})
+		h.ForEach("dd", func(_ int, h *colly.HTMLElement) {
+			metadata_values = append(metadata_values, h.Text)
+		})
+		for i, key := range metadata_keys {
+			fmt.Printf("%s %s\n", key, metadata_values[i])
+		}
+	})
+}
+
 func CreateRows(link string) ([]table.Row, []table.Column, []string) {
 	c := colly.NewCollector()
+
+	printMetadata(c)
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
@@ -137,25 +155,10 @@ func GetAlbum(album_link string) ([]table.Row, []table.Column) {
 			}
 			converter := convert.NewImageConverter()
 			convertOptions := convert.DefaultOptions
-			convertOptions.FixedWidth = 180
-			convertOptions.FixedHeight = 40
 			fmt.Print(converter.Image2ASCIIString(img, &convertOptions))
 		}
 	})
-	metadata_keys := make([]string, 0)
-	metadata_values := make([]string, 0)
-	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
-		h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
-			metadata_keys = append(metadata_keys, h.Text)
-		})
-		h.ForEach("dd", func(_ int, h *colly.HTMLElement) {
-			metadata_values = append(metadata_values, h.Text)
-		})
-		for i, key := range metadata_keys {
-			fmt.Printf("%s %s\n", key, metadata_values[i])
-		}
-	})
-
+	printMetadata(c)
 	c.Visit(album_link)
 	return rows, columns
 }
