@@ -18,7 +18,6 @@ func main() {
 	// 	metallum.GetAlbum(search)
 	// } else {
 	rows, columns, links := metallum.FindBand(search)
-	fmt.Println("BAND")
 	index := 0
 	if len(links) == 1 {
 		rows, columns, links = metallum.CreateRows(links[index])

@@ -12,6 +12,7 @@ import (
 type model struct {
 	table    table.Model
 	is_album bool
+	exit     bool
 }
 
 var baseStyle = lipgloss.NewStyle().
@@ -31,6 +32,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.table.Focus()
 			}
+			return m, tea.Quit
+		case "q", "ctrl+c":
+			m.exit = true
 			return m, tea.Quit
 		case "enter":
 			return m, tea.Quit
@@ -64,13 +68,16 @@ func PrintRows(rows []table.Row, columns []table.Column, is_album bool) int {
 		Bold(false)
 	t.SetStyles(s)
 
-	p := tea.NewProgram(model{t, is_album})
+	p := tea.NewProgram(model{t, is_album, false})
 	m, err := p.Run()
 	if err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
 	if m, ok := m.(model); ok {
+		if m.exit == true {
+			os.Exit(1)
+		}
 		return m.table.Cursor()
 	}
 	return -1
