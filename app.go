@@ -26,16 +26,17 @@ func main() {
 		if len(links) == 1 {
 			rows, columns, links = metallum.CreateRows(links[index])
 		} else {
-			index = cli.PrintRows(rows, columns, false)
+			index = cli.PrintRows(rows, columns)
 			rows, columns, links = metallum.CreateRows(links[index])
 		}
-		index = cli.PrintRows(rows, columns, false)
+		index = cli.PrintRows(rows, columns)
 		rows, columns = metallum.GetAlbum(links[index])
 		fmt.Println(links[index])
-		_ = cli.PrintRows(rows, columns, true)
+		_ = cli.PrintRows(rows, columns)
 	//
 	case "rym":
-		rym.SearchArtist(search)
-
+		rows, columns, links := rym.SearchArtist(search)
+		index := cli.PrintRows(rows, columns)
+		fmt.Println(links[index])
 	}
 }

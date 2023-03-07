@@ -21,11 +21,10 @@ func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 		band_link := h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
 		links = append(links, band_link)
 		band_name := h.ChildText("td:not(.page_search_img_cell) a.searchpage")
-		genres := []string{}
+		genres := make([]string, 0)
 		h.ForEach("a.smallgreen", func(_ int, h *colly.HTMLElement) {
 			genres = append(genres, h.Text)
 		})
-		fmt.Println(strings.Join(genres, "/"))
 		country := h.ChildAttr("span.ui_flag", "title")
 		rows = append(rows, table.Row{band_name, strings.Join(genres, "/"), country})
 	})
