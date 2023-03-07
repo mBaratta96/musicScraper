@@ -3,12 +3,12 @@ module music-scrapper
 go 1.18
 
 require (
+	cli v0.0.0-00010101000000-000000000000
 	metallum v0.0.0-00010101000000-000000000000
 	rym v0.0.0-00010101000000-000000000000
 )
 
 require (
-	cli v0.0.0-00010101000000-000000000000 // indirect
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/antchfx/htmlquery v1.3.0 // indirect
