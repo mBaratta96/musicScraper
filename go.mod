@@ -2,9 +2,13 @@ module music-scrapper
 
 go 1.18
 
-require metallum v0.0.0-00010101000000-000000000000
+require (
+	metallum v0.0.0-00010101000000-000000000000
+	rym v0.0.0-00010101000000-000000000000
+)
 
 require (
+	cli v0.0.0-00010101000000-000000000000 // indirect
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/antchfx/htmlquery v1.3.0 // indirect
@@ -41,8 +45,9 @@ require (
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	rym v0.0.0-00010101000000-000000000000 // indirect
 )
+
+replace cli => ./cli
 
 replace metallum => ./metallum
 

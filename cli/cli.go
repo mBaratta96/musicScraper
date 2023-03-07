@@ -1,4 +1,4 @@
-package metallum
+package cli
 
 import (
 	"fmt"

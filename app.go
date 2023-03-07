@@ -1,10 +1,11 @@
 package main
 
 import (
+	"cli"
 	"fmt"
 	"metallum"
 	"os"
-	//"rym"
+	"rym"
 )
 
 func main() {
@@ -25,16 +26,16 @@ func main() {
 		if len(links) == 1 {
 			rows, columns, links = metallum.CreateRows(links[index])
 		} else {
-			index = metallum.PrintRows(rows, columns, false)
+			index = cli.PrintRows(rows, columns, false)
 			rows, columns, links = metallum.CreateRows(links[index])
 		}
-		index = metallum.PrintRows(rows, columns, false)
+		index = cli.PrintRows(rows, columns, false)
 		rows, columns = metallum.GetAlbum(links[index])
 		fmt.Println(links[index])
-		_ = metallum.PrintRows(rows, columns, true)
+		_ = cli.PrintRows(rows, columns, true)
 	//
 	case "rym":
-		fmt.Println("RYM")
+		rym.SearchArtist(search)
 
 	}
 }
