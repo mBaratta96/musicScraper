@@ -12,6 +12,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/gocolly/colly"
 	"github.com/qeesung/image2ascii/convert"
 )
@@ -25,17 +26,18 @@ type SearchResponse struct {
 }
 
 func printMetadata(c *colly.Collector) {
+	key_style := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#b57614"))
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
 		metadata_values := make([]string, 0)
 		metadata_keys := make([]string, 0)
 		h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
-			metadata_keys = append(metadata_keys, h.Text)
+			metadata_keys = append(metadata_keys, key_style.Render(h.Text))
 		})
 		h.ForEach("dd", func(_ int, h *colly.HTMLElement) {
-			metadata_values = append(metadata_values, h.Text)
+			metadata_values = append(metadata_values, strings.Replace(h.Text, "\n", "", -1))
 		})
 		for i, key := range metadata_keys {
-			fmt.Printf("%s %s\n", key, metadata_values[i])
+			fmt.Println(key + metadata_values[i])
 		}
 	})
 }

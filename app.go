@@ -31,7 +31,7 @@ func main() {
 		}
 		index = cli.PrintRows(rows, columns)
 		rows, columns = metallum.GetAlbum(links[index])
-		fmt.Println(links[index])
+		fmt.Println("\n" + links[index])
 		_ = cli.PrintRows(rows, columns)
 	//
 	case "rym":

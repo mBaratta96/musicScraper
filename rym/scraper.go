@@ -5,11 +5,13 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/table"
-	//"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/gocolly/colly"
 )
 
-const domain string = "https://rateyourmusic.com"
+const (
+	domain string = "https://rateyourmusic.com"
+)
 
 func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 	c := colly.NewCollector()
@@ -42,11 +44,12 @@ func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 	c := colly.NewCollector()
 
+	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
-		fmt.Printf("Top Album: %s\n", h.Text)
+		fmt.Println(keyStyle.Render("Top Album") + h.Text)
 	})
 	c.OnHTML("div#column_container_right div.section_artist_biography > span.rendered_text", func(h *colly.HTMLElement) {
-		fmt.Printf(h.Text)
+		fmt.Println(keyStyle.Render("Biography") + h.Text)
 	})
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
@@ -79,11 +82,12 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 func GetAlbum(link string) ([]table.Row, []table.Column) {
 	c := colly.NewCollector()
 
+	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
 		key := h.ChildText("th")
 		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
 		if key != "Share" {
-			fmt.Printf("%s: %s\n", key, value)
+			fmt.Println(keyStyle.Render(key) + value)
 		}
 	})
 	rows := make([]table.Row, 0)
@@ -95,7 +99,9 @@ func GetAlbum(link string) ([]table.Row, []table.Column) {
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
 			if len(h.ChildText("span.tracklist_total")) > 0 {
-				fmt.Println(h.ChildText("span.tracklist_total"))
+				key := keyStyle.Render("Total length")
+				value := strings.Fields(h.ChildText("span.tracklist_total"))
+				fmt.Println(key + value[len(value)-1])
 			} else {
 				number := h.ChildText("span.tracklist_num")
 				title := h.ChildText("span[itemprop=name] span.rendered_text")
