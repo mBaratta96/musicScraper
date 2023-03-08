@@ -39,6 +39,7 @@ func main() {
 		index := cli.PrintRows(rows, columns)
 		rows, columns, links = rym.GetAlbumList(links[index])
 		index = cli.PrintRows(rows, columns)
-		rym.GetAlbum(links[index])
+		rows, columns = rym.GetAlbum(links[index])
+		_ = cli.PrintRows(rows, columns)
 	}
 }

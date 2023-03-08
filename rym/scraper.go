@@ -71,7 +71,7 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 	return rows, columns, links
 }
 
-func GetAlbum(link string) {
+func GetAlbum(link string) ([]table.Row, []table.Column) {
 	c := colly.NewCollector()
 
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
@@ -81,5 +81,24 @@ func GetAlbum(link string) {
 			fmt.Printf("%s: %s\n", key, value)
 		}
 	})
+	rows := make([]table.Row, 0)
+	columns := []table.Column{
+		{Title: "N.", Width: 32},
+		{Title: "Title", Width: 32},
+		{Title: "Duration", Width: 32},
+	}
+	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
+		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
+			if len(h.ChildText("span.tracklist_total")) > 0 {
+				fmt.Println(h.ChildText("span.tracklist_total"))
+			} else {
+				number := h.ChildText("span.tracklist_num")
+				title := h.ChildText("span[itemprop=name] span.rendered_text")
+				duration := h.ChildText("span.tracklist_duration")
+				rows = append(rows, table.Row{number, title, duration})
+			}
+		})
+	})
 	c.Visit(domain + link)
+	return rows, columns
 }
