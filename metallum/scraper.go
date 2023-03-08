@@ -154,6 +154,7 @@ func GetAlbum(album_link string) ([]table.Row, []table.Column) {
 			converter := convert.NewImageConverter()
 			convertOptions := convert.DefaultOptions
 			fmt.Print(converter.Image2ASCIIString(img, &convertOptions))
+			fmt.Println("\n" + album_link)
 		}
 	})
 	printMetadata(c)
