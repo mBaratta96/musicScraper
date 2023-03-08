@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/table"
+	//"github.com/charmbracelet/lipgloss"
 	"github.com/gocolly/colly"
 )
 
@@ -14,13 +15,12 @@ func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 	c := colly.NewCollector()
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
-		{Title: "Band name", Width: 32},
-		{Title: "Genere", Width: 32},
+		{Title: "Band name", Width: 64},
+		{Title: "Genere", Width: 64},
 		{Title: "Country", Width: 32},
 	}
 	links := []string{}
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
-		fmt.Println(h.Text)
 		band_link := h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
 		links = append(links, band_link)
 		band_name := h.ChildText("td:not(.page_search_img_cell) a.searchpage")
@@ -50,11 +50,12 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 	})
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
-		{Title: "Title", Width: 32},
-		{Title: "Year", Width: 32},
-		{Title: "Reviews", Width: 32},
-		{Title: "Ratings", Width: 32},
-		{Title: "Average", Width: 32},
+		{Title: "Rec.", Width: 4},
+		{Title: "Title", Width: 64},
+		{Title: "Year", Width: 4},
+		{Title: "Reviews", Width: 7},
+		{Title: "Ratings", Width: 7},
+		{Title: "Average", Width: 7},
 	}
 	links := []string{}
 	c.OnHTML("div#column_container_left div#discography div.disco_release", func(h *colly.HTMLElement) {
@@ -63,7 +64,11 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 		reviews := h.ChildText("div.disco_reviews")
 		ratings := h.ChildText("div.disco_ratings")
 		average := h.ChildText("div.disco_avg_rating")
-		rows = append(rows, table.Row{title, year, reviews, ratings, average})
+		recommended := ""
+		if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
+			recommended = ""
+		}
+		rows = append(rows, table.Row{recommended, title, year, reviews, ratings, average})
 		links = append(links, h.ChildAttr("div.disco_info > a", "href"))
 	})
 
@@ -83,9 +88,9 @@ func GetAlbum(link string) ([]table.Row, []table.Column) {
 	})
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
-		{Title: "N.", Width: 32},
-		{Title: "Title", Width: 32},
-		{Title: "Duration", Width: 32},
+		{Title: "N.", Width: 2},
+		{Title: "Title", Width: 64},
+		{Title: "Duration", Width: 8},
 	}
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {

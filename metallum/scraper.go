@@ -51,10 +51,10 @@ func CreateRows(link string) ([]table.Row, []table.Column, []string) {
 
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
-		{Title: "Name", Width: 32},
-		{Title: "Type", Width: 32},
-		{Title: "Year", Width: 32},
-		{Title: "Review", Width: 32},
+		{Title: "Name", Width: 64},
+		{Title: "Type", Width: 16},
+		{Title: "Year", Width: 4},
+		{Title: "Review", Width: 8},
 	}
 	album_links := make([]string, 0)
 	c.OnHTML("table.display.discog tbody tr", func(h *colly.HTMLElement) {
@@ -125,10 +125,10 @@ func GetAlbum(album_link string) ([]table.Row, []table.Column) {
 	c := colly.NewCollector()
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
-		{Title: "N.", Width: 32},
-		{Title: "Title", Width: 32},
-		{Title: "Duration", Width: 32},
-		{Title: "Lyric", Width: 32},
+		{Title: "N.", Width: 4},
+		{Title: "Title", Width: 64},
+		{Title: "Duration", Width: 8},
+		{Title: "Lyric", Width: 16},
 	}
 	c.OnHTML("div#album_tabs_tracklist tr.even, div#album_tabs_tracklist tr.odd", func(h *colly.HTMLElement) {
 		var row [4]string
