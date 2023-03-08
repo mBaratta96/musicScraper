@@ -83,8 +83,8 @@ func FindBand(band string) ([]table.Row, []table.Column, []string) {
 	rows := make([]table.Row, 0)
 	links := make([]string, 0)
 	columns := []table.Column{
-		{Title: "Band Name", Width: 32},
-		{Title: "Genre", Width: 32},
+		{Title: "Band Name", Width: 64},
+		{Title: "Genre", Width: 64},
 		{Title: "Country", Width: 32},
 	}
 
