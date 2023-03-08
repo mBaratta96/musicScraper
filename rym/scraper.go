@@ -1,12 +1,17 @@
 package rym
 
 import (
+	"bytes"
 	"fmt"
+	"image"
 	"strings"
+
+	_ "image/jpeg"
 
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gocolly/colly"
+	"github.com/qeesung/image2ascii/convert"
 )
 
 const (
@@ -81,6 +86,27 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 
 func GetAlbum(link string) ([]table.Row, []table.Column) {
 	c := colly.NewCollector()
+
+	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
+		image_url := h.ChildAttr("img", "src")
+		h.Request.Visit("https:" + image_url)
+	})
+
+	c.OnResponse(func(r *colly.Response) {
+		if r.Headers.Get("content-type") == "image/jpg" {
+			img, _, err := image.Decode(bytes.NewReader(r.Body))
+			if err != nil {
+				fmt.Println(err)
+			}
+			converter := convert.NewImageConverter()
+			convertOptions := convert.DefaultOptions
+			fmt.Print(converter.Image2ASCIIString(img, &convertOptions))
+
+		}
+	})
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r.StatusCode, "request was", r.Request.Headers, "\nError:", err)
+	})
 
 	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {

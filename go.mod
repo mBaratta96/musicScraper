@@ -17,6 +17,7 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aybabtme/rgbterm v0.0.0-20170906152045-cc83f3b3ce59 // indirect
 	github.com/aymanbagabas/go-osc52 v1.2.1 // indirect
+	github.com/chai2010/webp v1.1.1 // indirect
 	github.com/charmbracelet/bubbles v0.15.0 // indirect
 	github.com/charmbracelet/bubbletea v0.23.2 // indirect
 	github.com/charmbracelet/lipgloss v0.6.0 // indirect
