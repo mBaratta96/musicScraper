@@ -38,6 +38,7 @@ func main() {
 		rows, columns, links := rym.SearchArtist(search)
 		index := cli.PrintRows(rows, columns)
 		rows, columns, links = rym.GetAlbumList(links[index])
-		_ = cli.PrintRows(rows, columns)
+		index = cli.PrintRows(rows, columns)
+		rym.GetAlbum(links[index])
 	}
 }

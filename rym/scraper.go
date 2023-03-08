@@ -20,6 +20,7 @@ func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 	}
 	links := []string{}
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
+		fmt.Println(h.Text)
 		band_link := h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
 		links = append(links, band_link)
 		band_name := h.ChildText("td:not(.page_search_img_cell) a.searchpage")
@@ -30,8 +31,11 @@ func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 		country := h.ChildAttr("span.ui_flag", "title")
 		rows = append(rows, table.Row{band_name, strings.Join(genres, "/"), country})
 	})
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r.StatusCode, "request was", r.Request.Headers, "\nError:", err)
+	})
 
-	c.Visit(fmt.Sprintf(domain+"/search?searchterm=%s&searchtype=a", artist))
+	c.Visit(fmt.Sprintf(domain+"/search?searchterm=%s&searchtype=a", strings.Replace(artist, " ", "%20", -1)))
 	return rows, columns, links
 }
 
@@ -65,4 +69,17 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 
 	c.Visit(domain + link)
 	return rows, columns, links
+}
+
+func GetAlbum(link string) {
+	c := colly.NewCollector()
+
+	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
+		key := h.ChildText("th")
+		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
+		if key != "Share" {
+			fmt.Printf("%s: %s\n", key, value)
+		}
+	})
+	c.Visit(domain + link)
 }
