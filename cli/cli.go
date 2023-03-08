@@ -49,24 +49,30 @@ func (m model) View() string {
 	return baseStyle.Render(m.table.View()) + "\n"
 }
 
-func PrintRows(rows []table.Row, columns []table.Column) int {
+func PrintRows(rows []table.Row, columns []table.Column, is_selectable bool) int {
+	height := 7
+	if is_selectable {
+		height = len(rows)
+	}
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(7),
+		table.WithFocused(is_selectable),
+		table.WithHeight(height),
 	)
 
 	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(false)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
+	if is_selectable {
+		s.Header = s.Header.
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("240")).
+			BorderBottom(true).
+			Bold(false)
+		s.Selected = s.Selected.
+			Foreground(lipgloss.Color("229")).
+			Background(lipgloss.Color("57")).
+			Bold(false)
+	}
 	t.SetStyles(s)
 
 	p := tea.NewProgram(model{t, false})
