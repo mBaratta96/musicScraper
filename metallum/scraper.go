@@ -12,6 +12,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/gocolly/colly"
 	"github.com/qeesung/image2ascii/convert"
 )
@@ -25,17 +26,18 @@ type SearchResponse struct {
 }
 
 func printMetadata(c *colly.Collector) {
-	metadata_keys := make([]string, 0)
-	metadata_values := make([]string, 0)
+	key_style := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#b57614"))
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
+		metadata_values := make([]string, 0)
+		metadata_keys := make([]string, 0)
 		h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
-			metadata_keys = append(metadata_keys, h.Text)
+			metadata_keys = append(metadata_keys, key_style.Render(h.Text))
 		})
 		h.ForEach("dd", func(_ int, h *colly.HTMLElement) {
-			metadata_values = append(metadata_values, h.Text)
+			metadata_values = append(metadata_values, strings.Replace(h.Text, "\n", "", -1))
 		})
 		for i, key := range metadata_keys {
-			fmt.Printf("%s %s\n", key, metadata_values[i])
+			fmt.Println(key + metadata_values[i])
 		}
 	})
 }
@@ -51,23 +53,21 @@ func CreateRows(link string) ([]table.Row, []table.Column, []string) {
 
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
-		{Title: "Name", Width: 32},
-		{Title: "Type", Width: 32},
-		{Title: "Year", Width: 32},
-		{Title: "Review", Width: 32},
+		{Title: "Name", Width: 64},
+		{Title: "Type", Width: 16},
+		{Title: "Year", Width: 4},
+		{Title: "Review", Width: 8},
 	}
 	album_links := make([]string, 0)
-	c.OnHTML("table.display.discog tbody", func(h *colly.HTMLElement) {
-		h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-			var row [4]string
-			h.ForEach(".album,.demo,.other,td a[href]", func(i int, h *colly.HTMLElement) {
-				row[i] = h.Text
-				if i == 0 {
-					album_links = append(album_links, h.Attr("href"))
-				}
-			})
-			rows = append(rows, table.Row{row[0], row[1], row[2], row[3]})
+	c.OnHTML("table.display.discog tbody tr", func(h *colly.HTMLElement) {
+		var row [4]string
+		h.ForEach(".album,.demo,.other,td a[href]", func(i int, h *colly.HTMLElement) {
+			row[i] = h.Text
+			if i == 0 {
+				album_links = append(album_links, h.Attr("href"))
+			}
 		})
+		rows = append(rows, table.Row{row[0], row[1], row[2], row[3]})
 	})
 	c.OnError(func(r *colly.Response, err error) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
@@ -127,19 +127,17 @@ func GetAlbum(album_link string) ([]table.Row, []table.Column) {
 	c := colly.NewCollector()
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
-		{Title: "N.", Width: 32},
-		{Title: "Title", Width: 32},
-		{Title: "Duration", Width: 32},
-		{Title: "Lyric", Width: 32},
+		{Title: "N.", Width: 4},
+		{Title: "Title", Width: 64},
+		{Title: "Duration", Width: 8},
+		{Title: "Lyric", Width: 16},
 	}
-	c.OnHTML("table.display.table_lyrics tbody", func(h *colly.HTMLElement) {
-		h.ForEach("tr.even,tr.odd", func(i int, h *colly.HTMLElement) {
-			var row [4]string
-			h.ForEach("td", func(i int, h *colly.HTMLElement) {
-				row[i] = h.Text
-			})
-			rows = append(rows, table.Row{row[0], row[1], row[2], row[3]})
+	c.OnHTML("div#album_tabs_tracklist tr.even, div#album_tabs_tracklist tr.odd", func(h *colly.HTMLElement) {
+		var row [4]string
+		h.ForEach("td", func(i int, h *colly.HTMLElement) {
+			row[i] = h.Text
 		})
+		rows = append(rows, table.Row{row[0], row[1], row[2], row[3]})
 	})
 
 	c.OnHTML("a#cover.image", func(h *colly.HTMLElement) {
