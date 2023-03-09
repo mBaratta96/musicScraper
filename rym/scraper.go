@@ -46,6 +46,30 @@ func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 	return rows, columns, links
 }
 
+func addAlbums(h *colly.HTMLElement, query string, section string) ([]table.Row, []string) {
+	links := []string{}
+	rows := make([]table.Row, 0)
+	h.ForEach(query, func(_ int, h *colly.HTMLElement) {
+		title := h.ChildText("div.disco_info a.album")
+		year := h.ChildText("div.disco_info span[class*='disco_year']")
+		reviews := h.ChildText("div.disco_reviews")
+		ratings := h.ChildText("div.disco_ratings")
+		average := h.ChildText("div.disco_avg_rating")
+		recommended := ""
+		if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
+			recommended = ""
+		}
+		rows = append(rows, table.Row{recommended, title, year, reviews, ratings, average, section})
+		links = append(links, h.ChildAttr("div.disco_info > a", "href"))
+	})
+	return rows, links
+}
+
+type AlbumTable struct {
+	Query   string
+	Section string
+}
+
 func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 	c := colly.NewCollector()
 
@@ -64,20 +88,22 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 		{Title: "Reviews", Width: 7},
 		{Title: "Ratings", Width: 7},
 		{Title: "Average", Width: 7},
+		{Title: "Type", Width: 12},
 	}
 	links := []string{}
-	c.OnHTML("div#column_container_left div#discography div.disco_release", func(h *colly.HTMLElement) {
-		title := h.ChildText("div.disco_info a.album")
-		year := h.ChildText("div.disco_info span[class*='disco_year']")
-		reviews := h.ChildText("div.disco_reviews")
-		ratings := h.ChildText("div.disco_ratings")
-		average := h.ChildText("div.disco_avg_rating")
-		recommended := ""
-		if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
-			recommended = ""
+	albumTables := []AlbumTable{
+		{Query: "div#disco_type_s > div.disco_release", Section: "Album"},
+		{Query: "div#disco_type_l > div.disco_release", Section: "Live Album"},
+		{Query: "div#disco_type_e > div.disco_release", Section: "EP"},
+		{Query: "div#disco_type_a > div.disco_release", Section: "Appears On"},
+		{Query: "div#disco_type_c > div.disco_release", Section: "Compilation"},
+	}
+	c.OnHTML("div#column_container_left div#discography", func(h *colly.HTMLElement) {
+		for _, albumTable := range albumTables {
+			album_rows, album_links := addAlbums(h, albumTable.Query, albumTable.Section)
+			rows = append(rows, album_rows...)
+			links = append(links, album_links...)
 		}
-		rows = append(rows, table.Row{recommended, title, year, reviews, ratings, average})
-		links = append(links, h.ChildAttr("div.disco_info > a", "href"))
 	})
 
 	c.Visit(domain + link)
