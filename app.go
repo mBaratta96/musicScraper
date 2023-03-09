@@ -2,6 +2,7 @@ package main
 
 import (
 	"cli"
+	"fmt"
 	"metallum"
 	"os"
 	"rym"
@@ -21,6 +22,10 @@ func main() {
 	switch website {
 	case "metallum":
 		rows, columns, links := metallum.FindBand(search)
+		if len(links) == 0 {
+			fmt.Println("No result for your search")
+			os.Exit(0)
+		}
 		index := 0
 		if len(links) > 1 {
 			index = cli.PrintRows(rows, columns)
@@ -31,6 +36,10 @@ func main() {
 		_ = cli.PrintRows(rows, columns)
 	case "rym":
 		rows, columns, links := rym.SearchArtist(search)
+		if len(links) == 0 {
+			fmt.Println("No result for your search")
+			os.Exit(0)
+		}
 		index := 0
 		if len(links) > 1 {
 			index = cli.PrintRows(rows, columns)
