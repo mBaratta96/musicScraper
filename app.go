@@ -6,6 +6,8 @@ import (
 	"metallum"
 	"os"
 	"rym"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -13,12 +15,13 @@ func main() {
 	if len(os.Args) < 3 {
 		os.Exit(1)
 	}
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	website := os.Args[1]
 	search := os.Args[2]
-	// if album == true {
-	// 	fmt.Println("ALBUM")
-	// 	metallum.GetAlbum(search)
-	// } else {
 	switch website {
 	case "metallum":
 		rows, columns, links := metallum.FindBand(search)
@@ -39,6 +42,7 @@ func main() {
 		cli.PrintLink(links[index])
 		_ = cli.PrintRows(rows, columns)
 	case "rym":
+		rym.Login(os.Getenv("RYM_USERNAME"), os.Getenv("RYM_PASSWORD"))
 		rows, columns, links := rym.SearchArtist(search)
 		if len(links) == 0 {
 			fmt.Println("No result for your search")

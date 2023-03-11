@@ -17,6 +17,33 @@ const (
 	domain string = "https://rateyourmusic.com"
 )
 
+func Login(user string, password string) {
+	c := colly.NewCollector(colly.AllowURLRevisit(), colly.MaxDepth(5))
+	fmt.Println(user)
+	fmt.Println(password)
+	data := map[string][]byte{
+		"user":             []byte(user),
+		"password":         []byte(password),
+		"remember":         []byte("true"),
+		"maintain_session": []byte("true"),
+		"action":           []byte("Login"),
+		"rym_ajax_req":     []byte("1"),
+	}
+	// data_rating := map[string][]byte{
+	// 	"type":         []byte("l"),
+	// 	"assoc_id":     []byte("15114102"),
+	// 	"rating":       []byte("8"),
+	// 	"action":       []byte("CatalogSetRating"),
+	// 	"rym_ajax_req": []byte("1"),
+	// }
+	c.OnResponse(func(r *colly.Response) {
+		fmt.Println(r.StatusCode)
+		fmt.Println(r.Headers)
+		fmt.Println(c.Cookies(r.Request.URL.String()))
+	})
+	c.PostMultipart("https://rateyourmusic.com/httprequest/Login", data)
+}
+
 func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 	c := colly.NewCollector()
 	rows := make([]table.Row, 0)
