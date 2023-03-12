@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gocolly/colly"
-	"github.com/qeesung/image2ascii/convert"
 )
 
 const (
@@ -55,7 +54,7 @@ func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 	}
 	links := []string{}
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
-		band_link := h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
+		band_link := domain + h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
 		links = append(links, band_link)
 		band_name := h.ChildText("td:not(.page_search_img_cell) a.searchpage")
 		genres := make([]string, 0)
@@ -87,7 +86,7 @@ func addAlbums(h *colly.HTMLElement, query string, section string) ([]table.Row,
 			recommended = ""
 		}
 		rows = append(rows, table.Row{recommended, title, year, reviews, ratings, average, section})
-		links = append(links, h.ChildAttr("div.disco_info > a", "href"))
+		links = append(links, domain+h.ChildAttr("div.disco_info > a", "href"))
 	})
 	return rows, links
 }
@@ -133,11 +132,11 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 		}
 	})
 
-	c.Visit(domain + link)
+	c.Visit(link)
 	return rows, columns, links
 }
 
-func GetAlbum(link string) ([]table.Row, []table.Column) {
+func GetAlbum(link string) ([]table.Row, []table.Column, image.Image) {
 	c := colly.NewCollector()
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
@@ -145,20 +144,15 @@ func GetAlbum(link string) ([]table.Row, []table.Column) {
 		h.Request.Visit("https:" + image_url)
 	})
 
+	var img image.Image
 	c.OnResponse(func(r *colly.Response) {
 		if r.Headers.Get("content-type") == "image/jpg" {
-			img, _, err := image.Decode(bytes.NewReader(r.Body))
+			var err error
+			img, _, err = image.Decode(bytes.NewReader(r.Body))
 			if err != nil {
 				fmt.Println(err)
 			}
-			converter := convert.NewImageConverter()
-			convertOptions := convert.DefaultOptions
-			fmt.Print(converter.Image2ASCIIString(img, &convertOptions))
-			fmt.Println(domain + link)
 		}
-	})
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r.StatusCode, "request was", r.Request.Headers, "\nError:", err)
 	})
 
 	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
@@ -189,6 +183,6 @@ func GetAlbum(link string) ([]table.Row, []table.Column) {
 			}
 		})
 	})
-	c.Visit(domain + link)
-	return rows, columns
+	c.Visit(link)
+	return rows, columns, img
 }

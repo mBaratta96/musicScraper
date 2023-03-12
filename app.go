@@ -35,7 +35,11 @@ func main() {
 		}
 		rows, columns, links = metallum.CreateRows(links[index])
 		index = cli.PrintRows(rows, columns)
-		rows, columns = metallum.GetAlbum(links[index])
+		rows, columns, img := metallum.GetAlbum(links[index])
+		if img != nil {
+			cli.PrintImage(img)
+		}
+		cli.PrintLink(links[index])
 		_ = cli.PrintRows(rows, columns)
 	case "rym":
 		rym.Login(os.Getenv("RYM_USERNAME"), os.Getenv("RYM_PASSWORD"))
@@ -50,7 +54,11 @@ func main() {
 		}
 		rows, columns, links = rym.GetAlbumList(links[index])
 		index = cli.PrintRows(rows, columns)
-		rows, columns = rym.GetAlbum(links[index])
+		rows, columns, img := rym.GetAlbum(links[index])
+		if img != nil {
+			cli.PrintImage(img)
+		}
+		cli.PrintLink(links[index])
 		_ = cli.PrintRows(rows, columns)
 	}
 }
