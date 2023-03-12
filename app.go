@@ -15,10 +15,6 @@ func main() {
 	}
 	website := os.Args[1]
 	search := os.Args[2]
-	// if album == true {
-	// 	fmt.Println("ALBUM")
-	// 	metallum.GetAlbum(search)
-	// } else {
 	switch website {
 	case "metallum":
 		rows, columns, links := metallum.FindBand(search)
