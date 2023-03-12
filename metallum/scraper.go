@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gocolly/colly"
+	"github.com/qeesung/image2ascii/convert"
 )
 
 type SearchResponse struct {
@@ -122,7 +123,7 @@ func FindBand(band string) ([]table.Row, []table.Column, []string) {
 	return rows, columns, links
 }
 
-func GetAlbum(album_link string) ([]table.Row, []table.Column, image.Image) {
+func GetAlbum(album_link string) ([]table.Row, []table.Column) {
 	c := colly.NewCollector()
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
@@ -138,7 +139,6 @@ func GetAlbum(album_link string) ([]table.Row, []table.Column, image.Image) {
 		})
 		rows = append(rows, table.Row{row[0], row[1], row[2], row[3]})
 	})
-	var img image.Image
 
 	c.OnHTML("a#cover.image", func(h *colly.HTMLElement) {
 		image_src := h.ChildAttr("img", "src")
@@ -147,14 +147,17 @@ func GetAlbum(album_link string) ([]table.Row, []table.Column, image.Image) {
 
 	c.OnResponse(func(r *colly.Response) {
 		if r.Headers.Get("content-type") == "image/jpeg" {
-			var err error
-			img, _, err = image.Decode(bytes.NewReader(r.Body))
+			img, _, err := image.Decode(bytes.NewReader(r.Body))
 			if err != nil {
 				fmt.Println(err)
 			}
+			converter := convert.NewImageConverter()
+			convertOptions := convert.DefaultOptions
+			fmt.Print(converter.Image2ASCIIString(img, &convertOptions))
+			fmt.Println("\n" + album_link)
 		}
 	})
 	printMetadata(c)
 	c.Visit(album_link)
-	return rows, columns, img
+	return rows, columns
 }

@@ -2,13 +2,11 @@ package cli
 
 import (
 	"fmt"
-	"image"
 	"os"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/qeesung/image2ascii/convert"
 )
 
 type model struct {
@@ -82,14 +80,4 @@ func PrintRows(rows []table.Row, columns []table.Column) int {
 		return m.table.Cursor()
 	}
 	return -1
-}
-
-func PrintImage(img image.Image) {
-	converter := convert.NewImageConverter()
-	convertOptions := convert.DefaultOptions
-	fmt.Print(converter.Image2ASCIIString(img, &convertOptions))
-}
-
-func PrintLink(link string) {
-	fmt.Println("\n" + link + "\n")
 }
