@@ -109,7 +109,7 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 	return rows, columns, links
 }
 
-func GetAlbum(link string) ([]table.Row, []table.Column, image.Image) {
+func GetAlbum(link string) ([]table.Row, []table.Column, []string, []string, image.Image) {
 	c := colly.NewCollector()
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
@@ -129,11 +129,14 @@ func GetAlbum(link string) ([]table.Row, []table.Column, image.Image) {
 	})
 
 	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
+	keys := []string{}
+	values := []string{}
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
 		key := h.ChildText("th")
 		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
 		if key != "Share" {
-			fmt.Println(keyStyle.Render(key) + value)
+			keys = append(keys, keyStyle.Render(key))
+			values = append(values, value)
 		}
 	})
 	rows := make([]table.Row, 0)
@@ -157,5 +160,5 @@ func GetAlbum(link string) ([]table.Row, []table.Column, image.Image) {
 		})
 	})
 	c.Visit(link)
-	return rows, columns, img
+	return rows, columns, keys, values, img
 }

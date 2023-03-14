@@ -26,12 +26,14 @@ func main() {
 		if len(links) > 1 {
 			index = cli.PrintRows(rows, columns)
 		}
-		rows, columns, links = metallum.CreateRows(links[index])
+		rows, columns, keys, values, links := metallum.CreateRows(links[index])
+		cli.PrintMetadata(keys, values)
 		index = cli.PrintRows(rows, columns)
-		rows, columns, img := metallum.GetAlbum(links[index])
+		rows, columns, keys, values, img := metallum.GetAlbum(links[index])
 		if img != nil {
 			cli.PrintImage(img)
 		}
+		cli.PrintMetadata(keys, values)
 		cli.PrintLink(links[index])
 		_ = cli.PrintRows(rows, columns)
 	case "rym":
@@ -46,10 +48,11 @@ func main() {
 		}
 		rows, columns, links = rym.GetAlbumList(links[index])
 		index = cli.PrintRows(rows, columns)
-		rows, columns, img := rym.GetAlbum(links[index])
+		rows, columns, keys, values, img := rym.GetAlbum(links[index])
 		if img != nil {
 			cli.PrintImage(img)
 		}
+		cli.PrintMetadata(keys, values)
 		cli.PrintLink(links[index])
 		_ = cli.PrintRows(rows, columns)
 	}

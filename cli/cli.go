@@ -87,9 +87,15 @@ func PrintRows(rows []table.Row, columns []table.Column) int {
 func PrintImage(img image.Image) {
 	converter := convert.NewImageConverter()
 	convertOptions := convert.DefaultOptions
-	fmt.Print(converter.Image2ASCIIString(img, &convertOptions))
+	fmt.Println(converter.Image2ASCIIString(img, &convertOptions))
 }
 
 func PrintLink(link string) {
 	fmt.Println("\n" + link + "\n")
+}
+
+func PrintMetadata(keys []string, values []string) {
+	for i, key := range keys {
+		fmt.Println(key + values[i])
+	}
 }

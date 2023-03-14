@@ -24,27 +24,20 @@ type SearchResponse struct {
 	AaData               [][]string `json:"aaData"`
 }
 
-func printMetadata(c *colly.Collector) {
+func getMetadata(h *colly.HTMLElement) ([]string, []string) {
 	key_style := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#b57614"))
-	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
-		metadata_values := make([]string, 0)
-		metadata_keys := make([]string, 0)
-		h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
-			metadata_keys = append(metadata_keys, key_style.Render(h.Text))
-		})
-		h.ForEach("dd", func(_ int, h *colly.HTMLElement) {
-			metadata_values = append(metadata_values, strings.Replace(h.Text, "\n", "", -1))
-		})
-		for i, key := range metadata_keys {
-			fmt.Println(key + metadata_values[i])
-		}
+	keys, values := []string{}, []string{}
+	h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
+		keys = append(keys, key_style.Render(h.Text))
 	})
+	h.ForEach("dd", func(_ int, h *colly.HTMLElement) {
+		values = append(values, strings.Replace(h.Text, "\n", "", -1))
+	})
+	return keys, values
 }
 
-func CreateRows(link string) ([]table.Row, []table.Column, []string) {
+func CreateRows(link string) ([]table.Row, []table.Column, []string, []string, []string) {
 	c := colly.NewCollector()
-
-	printMetadata(c)
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
@@ -71,9 +64,12 @@ func CreateRows(link string) ([]table.Row, []table.Column, []string) {
 	c.OnError(func(r *colly.Response, err error) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
 	})
-
+	keys, values := []string{}, []string{}
+	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
+		keys, values = getMetadata(h)
+	})
 	c.Visit(link)
-	return rows, columns, album_links
+	return rows, columns, keys, values, album_links
 }
 
 func FindBand(band string) ([]table.Row, []table.Column, []string) {
@@ -122,7 +118,7 @@ func FindBand(band string) ([]table.Row, []table.Column, []string) {
 	return rows, columns, links
 }
 
-func GetAlbum(album_link string) ([]table.Row, []table.Column, image.Image) {
+func GetAlbum(album_link string) ([]table.Row, []table.Column, []string, []string, image.Image) {
 	c := colly.NewCollector()
 	rows := make([]table.Row, 0)
 	columns := []table.Column{
@@ -154,7 +150,10 @@ func GetAlbum(album_link string) ([]table.Row, []table.Column, image.Image) {
 			}
 		}
 	})
-	printMetadata(c)
+	keys, values := []string{}, []string{}
+	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
+		keys, values = getMetadata(h)
+	})
 	c.Visit(album_link)
-	return rows, columns, img
+	return rows, columns, keys, values, img
 }
