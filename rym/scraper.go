@@ -148,9 +148,9 @@ func GetAlbum(link string) ([]table.Row, []table.Column, []string, []string, ima
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
 			if len(h.ChildText("span.tracklist_total")) > 0 {
-				key := keyStyle.Render("Total length")
+				keys = append(keys, keyStyle.Render("Total length"))
 				value := strings.Fields(h.ChildText("span.tracklist_total"))
-				fmt.Println(key + value[len(value)-1])
+				values = append(values, value[len(value)-1])
 			} else {
 				number := h.ChildText("span.tracklist_num")
 				title := h.ChildText("span[itemprop=name] span.rendered_text")
