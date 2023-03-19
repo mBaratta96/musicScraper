@@ -24,10 +24,6 @@ type SearchResponse struct {
 	AaData               [][]string `json:"aaData"`
 }
 
-type Scraper interface {
-	FindBand() ([]table.Row, []table.Column, []string)
-}
-
 type Metallum struct {
 	Search string
 }
@@ -48,14 +44,14 @@ func getMetadata(h *colly.HTMLElement) ([]string, []string) {
 	return keys, values
 }
 
-func CreateRows(link string) ([]table.Row, []table.Column, []string, []string, []string) {
+func CreateRows(link string) ([][]string, []string, []string, []string, []string) {
 	c := colly.NewCollector()
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
 	})
 
-	rows := make([]table.Row, 0)
+	rows := make([][]string, 0)
 	columns := []table.Column{
 		{Title: "Name", Width: 64},
 		{Title: "Type", Width: 16},
