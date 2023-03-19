@@ -24,6 +24,18 @@ type SearchResponse struct {
 	AaData               [][]string `json:"aaData"`
 }
 
+type Scraper interface {
+	FindBand() ([]table.Row, []table.Column, []string)
+}
+
+type Metallum struct {
+	Search string
+}
+
+type RateYourMusic struct {
+	Search string
+}
+
 func getMetadata(h *colly.HTMLElement) ([]string, []string) {
 	key_style := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#b57614"))
 	keys, values := []string{}, []string{}
@@ -72,7 +84,7 @@ func CreateRows(link string) ([]table.Row, []table.Column, []string, []string, [
 	return rows, columns, keys, values, album_links
 }
 
-func FindBand(band string) ([]table.Row, []table.Column, []string) {
+func (m *Metallum) FindBand() ([]table.Row, []table.Column, []string) {
 	c := colly.NewCollector()
 
 	rows := make([]table.Row, 0)
@@ -114,7 +126,39 @@ func FindBand(band string) ([]table.Row, []table.Column, []string) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
 	})
 
-	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", band))
+	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Search))
+	return rows, columns, links
+}
+
+const (
+	domain string = "https://rateyourmusic.com"
+)
+
+func (r *RateYourMusic) FindBand() ([]table.Row, []table.Column, []string) {
+	c := colly.NewCollector()
+	rows := make([]table.Row, 0)
+	columns := []table.Column{
+		{Title: "Band name", Width: 64},
+		{Title: "Genere", Width: 64},
+		{Title: "Country", Width: 32},
+	}
+	links := []string{}
+	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
+		band_link := domain + h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
+		links = append(links, band_link)
+		band_name := h.ChildText("td:not(.page_search_img_cell) a.searchpage")
+		genres := make([]string, 0)
+		h.ForEach("a.smallgreen", func(_ int, h *colly.HTMLElement) {
+			genres = append(genres, h.Text)
+		})
+		country := h.ChildAttr("span.ui_flag", "title")
+		rows = append(rows, table.Row{band_name, strings.Join(genres, "/"), country})
+	})
+	c.OnError(func(r *colly.Response, err error) {
+		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r.StatusCode, "request was", r.Request.Headers, "\nError:", err)
+	})
+
+	c.Visit(fmt.Sprintf(domain+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Search, " ", "%20", -1)))
 	return rows, columns, links
 }
 

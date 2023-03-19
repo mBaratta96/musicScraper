@@ -17,7 +17,8 @@ func main() {
 	search := os.Args[2]
 	switch website {
 	case "metallum":
-		rows, columns, links := metallum.FindBand(search)
+		m := metallum.Metallum{search}
+		rows, columns, links := m.FindBand()
 		if len(links) == 0 {
 			fmt.Println("No result for your search")
 			os.Exit(0)
@@ -37,7 +38,8 @@ func main() {
 		cli.PrintLink(links[index])
 		_ = cli.PrintRows(rows, columns)
 	case "rym":
-		rows, columns, links := rym.SearchArtist(search)
+		r := metallum.RateYourMusic{search}
+		rows, columns, links := r.FindBand()
 		if len(links) == 0 {
 			fmt.Println("No result for your search")
 			os.Exit(0)
