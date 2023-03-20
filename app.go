@@ -3,43 +3,46 @@ package main
 import (
 	"cli"
 	"fmt"
-	"metallum"
 	"os"
-	"rym"
+	"scraper"
 )
 
+func app(s scraper.Scraper) {
+	rows, columns, links := s.FindBand()
+	if len(links) == 0 {
+		fmt.Println("No result for your search")
+		os.Exit(0)
+	}
+	index := 0
+	if len(links) > 1 {
+		index = cli.PrintRows(rows, columns.Title, columns.Width)
+	}
+	rows, columns, links, metadata := s.GetAlbumList(links[index])
+	cli.PrintMetadata(metadata, s.GetStyleColor())
+	index = cli.PrintRows(rows, columns.Title, columns.Width)
+	rows, columns, metadata, img := s.GetAlbum(links[index])
+
+	if img != nil {
+		cli.PrintImage(img)
+	}
+	cli.PrintMetadata(metadata, s.GetStyleColor())
+	cli.PrintLink(links[index])
+	_ = cli.PrintRows(rows, columns.Title, columns.Width)
+}
+
 func main() {
-	// flag.Parse()
 	if len(os.Args) < 3 {
 		os.Exit(1)
 	}
 	website := os.Args[1]
 	search := os.Args[2]
-	// if album == true {
-	// 	fmt.Println("ALBUM")
-	// 	metallum.GetAlbum(search)
-	// } else {
-	switch website {
-	case "metallum":
-		rows, columns, links := metallum.FindBand(search)
-		index := 0
-		if len(links) == 1 {
-			rows, columns, links = metallum.CreateRows(links[index])
-		} else {
-			index = cli.PrintRows(rows, columns, true)
-			rows, columns, links = metallum.CreateRows(links[index])
-		}
-		index = cli.PrintRows(rows, columns, true)
-		rows, columns = metallum.GetAlbum(links[index])
-		fmt.Println("\n" + links[index])
-		_ = cli.PrintRows(rows, columns, true)
-	//
-	case "rym":
-		rows, columns, links := rym.SearchArtist(search)
-		index := cli.PrintRows(rows, columns, true)
-		rows, columns, links = rym.GetAlbumList(links[index])
-		index = cli.PrintRows(rows, columns, true)
-		rows, columns = rym.GetAlbum(links[index])
-		_ = cli.PrintRows(rows, columns, true)
+	if !(website == "metallum" || website == "rym") {
+		fmt.Println("Wrong website")
+		os.Exit(1)
+	}
+	if website == "metallum" {
+		app(scraper.Metallum{Search: search})
+	} else {
+		app(scraper.RateYourMusic{Search: search})
 	}
 }

@@ -2,11 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"image"
 	"os"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/qeesung/image2ascii/convert"
 )
 
 type model struct {
@@ -47,15 +49,30 @@ func (m model) View() string {
 	return baseStyle.Render(m.table.View()) + "\n"
 }
 
-func PrintRows(rows []table.Row, columns []table.Column, is_selectable bool) int {
-	height := 7
-	if is_selectable {
-		height = len(rows)
+func createColumns(columnNames []string, widths []int) []table.Column {
+	colums := make([]table.Column, 0)
+	for i, columnName := range columnNames {
+		colums = append(colums, table.Column{Title: columnName, Width: widths[i]})
 	}
+	return colums
+}
+
+func createRows(rowsString [][]string) []table.Row {
+	rows := make([]table.Row, 0)
+	for _, row := range rowsString {
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+func PrintRows(rowsString [][]string, columnsString []string, widths []int) int {
+	columns := createColumns(columnsString, widths)
+	rows := createRows(rowsString)
+	height := 7
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
-		table.WithFocused(is_selectable),
+		table.WithFocused(true),
 		table.WithHeight(height),
 	)
 
@@ -80,10 +97,27 @@ func PrintRows(rows []table.Row, columns []table.Column, is_selectable bool) int
 		os.Exit(1)
 	}
 	if m, ok := m.(model); ok {
-		if m.exit == true {
+		if m.exit {
 			os.Exit(1)
 		}
 		return m.table.Cursor()
 	}
 	return -1
+}
+
+func PrintImage(img image.Image) {
+	converter := convert.NewImageConverter()
+	convertOptions := convert.DefaultOptions
+	fmt.Println(converter.Image2ASCIIString(img, &convertOptions))
+}
+
+func PrintLink(link string) {
+	fmt.Println("\n" + link + "\n")
+}
+
+func PrintMetadata(metadata map[string]string, color string) {
+	style := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color(color))
+	for k, v := range metadata {
+		fmt.Println(style.Render(k) + v)
+	}
 }
