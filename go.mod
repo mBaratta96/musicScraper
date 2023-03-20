@@ -6,6 +6,7 @@ require (
 	cli v0.0.0-00010101000000-000000000000
 	metallum v0.0.0-00010101000000-000000000000
 	rym v0.0.0-00010101000000-000000000000
+	scraper v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -14,15 +15,12 @@ require (
 	github.com/antchfx/htmlquery v1.3.0 // indirect
 	github.com/antchfx/xmlquery v1.3.15 // indirect
 	github.com/antchfx/xpath v1.2.3 // indirect
-	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aybabtme/rgbterm v0.0.0-20170906152045-cc83f3b3ce59 // indirect
 	github.com/aymanbagabas/go-osc52 v1.2.1 // indirect
-	github.com/chai2010/webp v1.1.1 // indirect
 	github.com/charmbracelet/bubbles v0.15.0 // indirect
 	github.com/charmbracelet/bubbletea v0.23.2 // indirect
 	github.com/charmbracelet/lipgloss v0.6.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
-	github.com/evertras/bubble-table v0.14.8 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gocolly/colly v1.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -48,6 +46,7 @@ require (
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
 
 replace cli => ./cli
@@ -55,3 +54,5 @@ replace cli => ./cli
 replace metallum => ./metallum
 
 replace rym => ./rym
+
+replace scraper => ./scraper

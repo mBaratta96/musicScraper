@@ -6,6 +6,7 @@ import (
 	"metallum"
 	"os"
 	"rym"
+	"scraper"
 )
 
 func main() {
@@ -17,7 +18,7 @@ func main() {
 	search := os.Args[2]
 	switch website {
 	case "metallum":
-		m := metallum.Metallum{search}
+		m := scraper.Metallum{search}
 		rows, links := m.FindBand()
 		if len(links) == 0 {
 			fmt.Println("No result for your search")

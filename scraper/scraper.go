@@ -1,7 +1,9 @@
 package scraper
 
-import "github.com/charmbracelet/bubbles/table"
+import "image"
 
 type Scraper interface {
-	FindBand() ([]table.Row, []table.Column, []string)
+	FindBand() ([][]string, []string)
+	GetAlbumList(string) ([][]string, []string, map[string]string)
+	GetAlbum(string) ([][]string, map[string]string, image.Image)
 }
