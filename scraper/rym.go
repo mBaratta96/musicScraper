@@ -8,25 +8,21 @@ import (
 
 	_ "image/jpeg"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/gocolly/colly"
 )
 
 const (
-	domain string = "https://rateyourmusic.com"
+	DOMAIN        string = "https://rateyourmusic.com"
+	RYMSTYLECOLOR string = "#427b58"
 )
 
-type RateYourMusic struct {
-	Search string
-}
-
-func (r *RateYourMusic) FindBand() ([][]string, []string) {
+func (r RateYourMusic) FindBand() ([][]string, ColumnData, []string) {
 	c := colly.NewCollector()
 	rows := make([][]string, 0)
 
 	links := []string{}
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
-		band_link := domain + h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
+		band_link := DOMAIN + h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
 		links = append(links, band_link)
 		band_name := h.ChildText("td:not(.page_search_img_cell) a.searchpage")
 		genres := make([]string, 0)
@@ -40,8 +36,13 @@ func (r *RateYourMusic) FindBand() ([][]string, []string) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r.StatusCode, "request was", r.Request.Headers, "\nError:", err)
 	})
 
-	c.Visit(fmt.Sprintf(domain+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Search, " ", "%20", -1)))
-	return rows, links
+	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Search, " ", "%20", -1)))
+
+	columns := ColumnData{
+		Title: []string{"Band Name", "Genre", "Country"},
+		Width: []int{64, 64, 32},
+	}
+	return rows, columns, links
 }
 
 func addAlbums(h *colly.HTMLElement, query string, section string) ([][]string, []string) {
@@ -58,7 +59,7 @@ func addAlbums(h *colly.HTMLElement, query string, section string) ([][]string, 
 			recommended = ""
 		}
 		rows = append(rows, []string{recommended, title, year, reviews, ratings, average, section})
-		links = append(links, domain+h.ChildAttr("div.disco_info > a", "href"))
+		links = append(links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
 	})
 	return rows, links
 }
@@ -68,16 +69,15 @@ type AlbumTable struct {
 	Section string
 }
 
-func (r *RateYourMusic) GetAlbumList(link string) ([][]string, []string, map[string]string) {
+func (r RateYourMusic) GetAlbumList(link string) ([][]string, ColumnData, []string, map[string]string) {
 	c := colly.NewCollector()
 
 	metadata := make(map[string]string)
-	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
-		metadata[keyStyle.Render("Top Album")] = h.Text
+		metadata["Top Album"] = h.Text
 	})
 	c.OnHTML("div#column_container_right div.section_artist_biography > span.rendered_text", func(h *colly.HTMLElement) {
-		metadata[keyStyle.Render("Biography")] = h.Text
+		metadata["Biography"] = h.Text
 	})
 
 	rows := make([][]string, 0)
@@ -98,10 +98,14 @@ func (r *RateYourMusic) GetAlbumList(link string) ([][]string, []string, map[str
 	})
 
 	c.Visit(link)
-	return rows, links, metadata
+	columns := ColumnData{
+		Title: []string{"Rec.", "Title", "Year", "Reviews", "Rating", "Average", "Type"},
+		Width: []int{4, 64, 4, 7, 7, 7, 12},
+	}
+	return rows, columns, links, metadata
 }
 
-func (r *RateYourMusic) GetAlbum(link string) ([][]string, map[string]string, image.Image) {
+func (r RateYourMusic) GetAlbum(link string) ([][]string, ColumnData, map[string]string, image.Image) {
 	c := colly.NewCollector()
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
@@ -120,13 +124,12 @@ func (r *RateYourMusic) GetAlbum(link string) ([][]string, map[string]string, im
 		}
 	})
 
-	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
 	metadata := make(map[string]string)
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
 		key := h.ChildText("th")
 		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
 		if key != "Share" {
-			metadata[keyStyle.Render(key)] = value
+			metadata[key] = value
 		}
 	})
 	rows := make([][]string, 0)
@@ -135,7 +138,7 @@ func (r *RateYourMusic) GetAlbum(link string) ([][]string, map[string]string, im
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
 			if len(h.ChildText("span.tracklist_total")) > 0 {
 				value := strings.Fields(h.ChildText("span.tracklist_total"))
-				metadata[keyStyle.Render("Total Length")] = value[len(value)-1]
+				metadata["Total Length"] = value[len(value)-1]
 			} else {
 				number := h.ChildText("span.tracklist_num")
 				title := h.ChildText("span[itemprop=name] span.rendered_text")
@@ -145,5 +148,13 @@ func (r *RateYourMusic) GetAlbum(link string) ([][]string, map[string]string, im
 		})
 	})
 	c.Visit(link)
-	return rows, metadata, img
+	columns := ColumnData{
+		Title: []string{"N.", "Title", "Duration"},
+		Width: []int{4, 64, 8},
+	}
+	return rows, columns, metadata, img
+}
+
+func (r RateYourMusic) GetStyleColor() string {
+	return RYMSTYLECOLOR
 }

@@ -113,8 +113,9 @@ func PrintLink(link string) {
 	fmt.Println("\n" + link + "\n")
 }
 
-func PrintMetadata(metadata map[string]string) {
+func PrintMetadata(metadata map[string]string, color string) {
+	style := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color(color))
 	for k, v := range metadata {
-		fmt.Println(k + v)
+		fmt.Println(style.Render(k) + v)
 	}
 }
