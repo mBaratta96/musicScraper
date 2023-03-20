@@ -44,7 +44,7 @@ func getMetadata(h *colly.HTMLElement) ([]string, []string) {
 	return keys, values
 }
 
-func CreateRows(link string) ([][]string, []string, []string, []string, []string) {
+func CreateRows(link string) ([][]string, []string, []string, []string) {
 	c := colly.NewCollector()
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
@@ -52,12 +52,6 @@ func CreateRows(link string) ([][]string, []string, []string, []string, []string
 	})
 
 	rows := make([][]string, 0)
-	columns := []table.Column{
-		{Title: "Name", Width: 64},
-		{Title: "Type", Width: 16},
-		{Title: "Year", Width: 4},
-		{Title: "Review", Width: 8},
-	}
 	album_links := make([]string, 0)
 	c.OnHTML("table.display.discog tbody tr", func(h *colly.HTMLElement) {
 		var row [4]string
@@ -77,19 +71,14 @@ func CreateRows(link string) ([][]string, []string, []string, []string, []string
 		keys, values = getMetadata(h)
 	})
 	c.Visit(link)
-	return rows, columns, keys, values, album_links
+	return rows, keys, values, album_links
 }
 
-func (m *Metallum) FindBand() ([]table.Row, []table.Column, []string) {
+func (m *Metallum) FindBand() ([][]string, []string) {
 	c := colly.NewCollector()
 
-	rows := make([]table.Row, 0)
+	rows := make([][]string, 0)
 	links := make([]string, 0)
-	columns := []table.Column{
-		{Title: "Band Name", Width: 64},
-		{Title: "Genre", Width: 64},
-		{Title: "Country", Width: 32},
-	}
 
 	c.OnResponse(func(r *colly.Response) {
 		var response SearchResponse
@@ -115,7 +104,7 @@ func (m *Metallum) FindBand() ([]table.Row, []table.Column, []string) {
 					row[2] = node
 				}
 			}
-			rows = append(rows, table.Row{row[0], row[1], row[2]})
+			rows = append(rows, []string{row[0], row[1], row[2]})
 		}
 	})
 	c.OnError(func(r *colly.Response, err error) {
@@ -123,7 +112,7 @@ func (m *Metallum) FindBand() ([]table.Row, []table.Column, []string) {
 	})
 
 	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Search))
-	return rows, columns, links
+	return rows, links
 }
 
 const (
@@ -158,21 +147,16 @@ func (r *RateYourMusic) FindBand() ([]table.Row, []table.Column, []string) {
 	return rows, columns, links
 }
 
-func GetAlbum(album_link string) ([]table.Row, []table.Column, []string, []string, image.Image) {
+func GetAlbum(album_link string) ([][]string, []string, []string, image.Image) {
 	c := colly.NewCollector()
-	rows := make([]table.Row, 0)
-	columns := []table.Column{
-		{Title: "N.", Width: 4},
-		{Title: "Title", Width: 64},
-		{Title: "Duration", Width: 8},
-		{Title: "Lyric", Width: 16},
-	}
+	rows := make([][]string, 0)
+
 	c.OnHTML("div#album_tabs_tracklist tr.even, div#album_tabs_tracklist tr.odd", func(h *colly.HTMLElement) {
 		var row [4]string
 		h.ForEach("td", func(i int, h *colly.HTMLElement) {
 			row[i] = h.Text
 		})
-		rows = append(rows, table.Row{row[0], row[1], row[2], row[3]})
+		rows = append(rows, []string{row[0], row[1], row[2], row[3]})
 	})
 	var img image.Image
 
@@ -195,5 +179,5 @@ func GetAlbum(album_link string) ([]table.Row, []table.Column, []string, []strin
 		keys, values = getMetadata(h)
 	})
 	c.Visit(album_link)
-	return rows, columns, keys, values, img
+	return rows, keys, values, img
 }

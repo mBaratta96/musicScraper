@@ -68,7 +68,7 @@ func createRows(rowsString [][]string) []table.Row {
 func PrintRows(rowsString [][]string, columnsString []string, widths []int) int {
 	columns := createColumns(columnsString, widths)
 	rows := createRows(rowsString)
-	height := len(rows)
+	height := 7
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
@@ -95,7 +95,7 @@ func PrintRows(rowsString [][]string, columnsString []string, widths []int) int 
 		os.Exit(1)
 	}
 	if m, ok := m.(model); ok {
-		if m.exit == true {
+		if m.exit {
 			os.Exit(1)
 		}
 		return m.table.Cursor()

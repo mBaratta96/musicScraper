@@ -8,7 +8,6 @@ import (
 
 	_ "image/jpeg"
 
-	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gocolly/colly"
 )
@@ -17,14 +16,10 @@ const (
 	domain string = "https://rateyourmusic.com"
 )
 
-func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
+func SearchArtist(artist string) ([][]string, []string) {
 	c := colly.NewCollector()
-	rows := make([]table.Row, 0)
-	columns := []table.Column{
-		{Title: "Band name", Width: 64},
-		{Title: "Genere", Width: 64},
-		{Title: "Country", Width: 32},
-	}
+	rows := make([][]string, 0)
+
 	links := []string{}
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
 		band_link := domain + h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
@@ -35,19 +30,19 @@ func SearchArtist(artist string) ([]table.Row, []table.Column, []string) {
 			genres = append(genres, h.Text)
 		})
 		country := h.ChildAttr("span.ui_flag", "title")
-		rows = append(rows, table.Row{band_name, strings.Join(genres, "/"), country})
+		rows = append(rows, []string{band_name, strings.Join(genres, "/"), country})
 	})
 	c.OnError(func(r *colly.Response, err error) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r.StatusCode, "request was", r.Request.Headers, "\nError:", err)
 	})
 
 	c.Visit(fmt.Sprintf(domain+"/search?searchterm=%s&searchtype=a", strings.Replace(artist, " ", "%20", -1)))
-	return rows, columns, links
+	return rows, links
 }
 
-func addAlbums(h *colly.HTMLElement, query string, section string) ([]table.Row, []string) {
+func addAlbums(h *colly.HTMLElement, query string, section string) ([][]string, []string) {
 	links := []string{}
-	rows := make([]table.Row, 0)
+	rows := make([][]string, 0)
 	h.ForEach(query, func(_ int, h *colly.HTMLElement) {
 		title := h.ChildText("div.disco_info a.album")
 		year := h.ChildText("div.disco_info span[class*='disco_year']")
@@ -58,7 +53,7 @@ func addAlbums(h *colly.HTMLElement, query string, section string) ([]table.Row,
 		if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
 			recommended = ""
 		}
-		rows = append(rows, table.Row{recommended, title, year, reviews, ratings, average, section})
+		rows = append(rows, []string{recommended, title, year, reviews, ratings, average, section})
 		links = append(links, domain+h.ChildAttr("div.disco_info > a", "href"))
 	})
 	return rows, links
@@ -69,7 +64,7 @@ type AlbumTable struct {
 	Section string
 }
 
-func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
+func GetAlbumList(link string) ([][]string, []string) {
 	c := colly.NewCollector()
 
 	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
@@ -79,16 +74,8 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 	c.OnHTML("div#column_container_right div.section_artist_biography > span.rendered_text", func(h *colly.HTMLElement) {
 		fmt.Println(keyStyle.Render("Biography") + h.Text)
 	})
-	rows := make([]table.Row, 0)
-	columns := []table.Column{
-		{Title: "Rec.", Width: 4},
-		{Title: "Title", Width: 64},
-		{Title: "Year", Width: 4},
-		{Title: "Reviews", Width: 7},
-		{Title: "Ratings", Width: 7},
-		{Title: "Average", Width: 7},
-		{Title: "Type", Width: 12},
-	}
+	rows := make([][]string, 0)
+
 	links := []string{}
 	albumTables := []AlbumTable{
 		{Query: "div#disco_type_s > div.disco_release", Section: "Album"},
@@ -106,10 +93,10 @@ func GetAlbumList(link string) ([]table.Row, []table.Column, []string) {
 	})
 
 	c.Visit(link)
-	return rows, columns, links
+	return rows, links
 }
 
-func GetAlbum(link string) ([]table.Row, []table.Column, []string, []string, image.Image) {
+func GetAlbum(link string) ([][]string, []string, []string, image.Image) {
 	c := colly.NewCollector()
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
@@ -139,12 +126,8 @@ func GetAlbum(link string) ([]table.Row, []table.Column, []string, []string, ima
 			values = append(values, value)
 		}
 	})
-	rows := make([]table.Row, 0)
-	columns := []table.Column{
-		{Title: "N.", Width: 2},
-		{Title: "Title", Width: 64},
-		{Title: "Duration", Width: 8},
-	}
+	rows := make([][]string, 0)
+
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
 			if len(h.ChildText("span.tracklist_total")) > 0 {
@@ -155,10 +138,10 @@ func GetAlbum(link string) ([]table.Row, []table.Column, []string, []string, ima
 				number := h.ChildText("span.tracklist_num")
 				title := h.ChildText("span[itemprop=name] span.rendered_text")
 				duration := h.ChildText("span.tracklist_duration")
-				rows = append(rows, table.Row{number, title, duration})
+				rows = append(rows, []string{number, title, duration})
 			}
 		})
 	})
 	c.Visit(link)
-	return rows, columns, keys, values, img
+	return rows, keys, values, img
 }
