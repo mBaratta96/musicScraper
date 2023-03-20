@@ -4,8 +4,6 @@ go 1.18
 
 require (
 	cli v0.0.0-00010101000000-000000000000
-	metallum v0.0.0-00010101000000-000000000000
-	rym v0.0.0-00010101000000-000000000000
 	scraper v0.0.0-00010101000000-000000000000
 )
 
@@ -50,9 +48,5 @@ require (
 )
 
 replace cli => ./cli
-
-replace metallum => ./metallum
-
-replace rym => ./rym
 
 replace scraper => ./scraper

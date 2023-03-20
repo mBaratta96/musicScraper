@@ -36,7 +36,7 @@ func getMetadata(h *colly.HTMLElement) map[string]string {
 	h.ForEach("dd", func(_ int, h *colly.HTMLElement) {
 		values = append(values, strings.Replace(h.Text, "\n", "", -1))
 	})
-	metadata := map[string]string{}
+	metadata := make(map[string]string)
 	for i, k := range keys {
 		metadata[k] = values[i]
 	}
@@ -65,7 +65,7 @@ func (m *Metallum) GetAlbumList(link string) ([][]string, []string, map[string]s
 	c.OnError(func(r *colly.Response, err error) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
 	})
-	var metadata map[string]string
+	metadata := make(map[string]string)
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
 		metadata = getMetadata(h)
 	})

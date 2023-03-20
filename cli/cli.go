@@ -113,8 +113,8 @@ func PrintLink(link string) {
 	fmt.Println("\n" + link + "\n")
 }
 
-func PrintMetadata(keys []string, values []string) {
-	for i, key := range keys {
-		fmt.Println(key + values[i])
+func PrintMetadata(metadata map[string]string) {
+	for k, v := range metadata {
+		fmt.Println(k + v)
 	}
 }

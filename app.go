@@ -3,9 +3,7 @@ package main
 import (
 	"cli"
 	"fmt"
-	"metallum"
 	"os"
-	"rym"
 	"scraper"
 )
 
@@ -18,7 +16,7 @@ func main() {
 	search := os.Args[2]
 	switch website {
 	case "metallum":
-		m := scraper.Metallum{search}
+		m := scraper.Metallum{Search: search}
 		rows, links := m.FindBand()
 		if len(links) == 0 {
 			fmt.Println("No result for your search")
@@ -28,19 +26,20 @@ func main() {
 		if len(links) > 1 {
 			index = cli.PrintRows(rows, []string{"Band Name", "Genre", "Country"}, []int{64, 64, 32})
 		}
-		rows, keys, values, links := metallum.CreateRows(links[index])
-		cli.PrintMetadata(keys, values)
+		rows, links, metadata := m.GetAlbumList(links[index])
+		cli.PrintMetadata(metadata)
 		index = cli.PrintRows(rows, []string{"Name", "Type", "Year", "Country"}, []int{64, 16, 4, 8})
-		rows, keys, values, img := metallum.GetAlbum(links[index])
+		rows, metadata, img := m.GetAlbum(links[index])
 
 		if img != nil {
 			cli.PrintImage(img)
 		}
-		cli.PrintMetadata(keys, values)
+		cli.PrintMetadata(metadata)
 		cli.PrintLink(links[index])
 		_ = cli.PrintRows(rows, []string{"N.", "Title", "Duration", "Lyric"}, []int{4, 64, 8, 16})
 	case "rym":
-		rows, links := rym.SearchArtist(search)
+		r := scraper.RateYourMusic{Search: search}
+		rows, links := r.FindBand()
 		if len(links) == 0 {
 			fmt.Println("No result for your search")
 			os.Exit(0)
@@ -49,18 +48,18 @@ func main() {
 		if len(links) > 1 {
 			index = cli.PrintRows(rows, []string{"Band Name", "Genre", "Country"}, []int{64, 64, 32})
 		}
-		rows, links = rym.GetAlbumList(links[index])
-
+		rows, links, metadata := r.GetAlbumList(links[index])
+		cli.PrintMetadata(metadata)
 		index = cli.PrintRows(
 			rows,
 			[]string{"Rec.", "Title", "Year", "Reviews", "Ratings", "Average", "Type"},
 			[]int{4, 64, 4, 7, 7, 7, 12},
 		)
-		rows, keys, values, img := rym.GetAlbum(links[index])
+		rows, metadata, img := r.GetAlbum(links[index])
 		if img != nil {
 			cli.PrintImage(img)
 		}
-		cli.PrintMetadata(keys, values)
+		cli.PrintMetadata(metadata)
 		cli.PrintLink(links[index])
 		_ = cli.PrintRows(rows, []string{"N.", "Title", "Duration"}, []int{4, 64, 8})
 	}

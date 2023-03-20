@@ -1,4 +1,4 @@
-package rym
+package scraper
 
 import (
 	"bytes"
@@ -16,7 +16,11 @@ const (
 	domain string = "https://rateyourmusic.com"
 )
 
-func SearchArtist(artist string) ([][]string, []string) {
+type RateYourMusic struct {
+	Search string
+}
+
+func (r *RateYourMusic) FindBand() ([][]string, []string) {
 	c := colly.NewCollector()
 	rows := make([][]string, 0)
 
@@ -36,7 +40,7 @@ func SearchArtist(artist string) ([][]string, []string) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r.StatusCode, "request was", r.Request.Headers, "\nError:", err)
 	})
 
-	c.Visit(fmt.Sprintf(domain+"/search?searchterm=%s&searchtype=a", strings.Replace(artist, " ", "%20", -1)))
+	c.Visit(fmt.Sprintf(domain+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Search, " ", "%20", -1)))
 	return rows, links
 }
 
@@ -64,18 +68,19 @@ type AlbumTable struct {
 	Section string
 }
 
-func GetAlbumList(link string) ([][]string, []string) {
+func (r *RateYourMusic) GetAlbumList(link string) ([][]string, []string, map[string]string) {
 	c := colly.NewCollector()
 
+	metadata := make(map[string]string)
 	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
-		fmt.Println(keyStyle.Render("Top Album") + h.Text)
+		metadata[keyStyle.Render("Top Album")] = h.Text
 	})
 	c.OnHTML("div#column_container_right div.section_artist_biography > span.rendered_text", func(h *colly.HTMLElement) {
-		fmt.Println(keyStyle.Render("Biography") + h.Text)
+		metadata[keyStyle.Render("Biography")] = h.Text
 	})
-	rows := make([][]string, 0)
 
+	rows := make([][]string, 0)
 	links := []string{}
 	albumTables := []AlbumTable{
 		{Query: "div#disco_type_s > div.disco_release", Section: "Album"},
@@ -93,10 +98,10 @@ func GetAlbumList(link string) ([][]string, []string) {
 	})
 
 	c.Visit(link)
-	return rows, links
+	return rows, links, metadata
 }
 
-func GetAlbum(link string) ([][]string, []string, []string, image.Image) {
+func (r *RateYourMusic) GetAlbum(link string) ([][]string, map[string]string, image.Image) {
 	c := colly.NewCollector()
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
@@ -116,14 +121,12 @@ func GetAlbum(link string) ([][]string, []string, []string, image.Image) {
 	})
 
 	keyStyle := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color("#427b58"))
-	keys := []string{}
-	values := []string{}
+	metadata := make(map[string]string)
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
 		key := h.ChildText("th")
 		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
 		if key != "Share" {
-			keys = append(keys, keyStyle.Render(key))
-			values = append(values, value)
+			metadata[keyStyle.Render(key)] = value
 		}
 	})
 	rows := make([][]string, 0)
@@ -131,9 +134,8 @@ func GetAlbum(link string) ([][]string, []string, []string, image.Image) {
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
 			if len(h.ChildText("span.tracklist_total")) > 0 {
-				keys = append(keys, keyStyle.Render("Total length"))
 				value := strings.Fields(h.ChildText("span.tracklist_total"))
-				values = append(values, value[len(value)-1])
+				metadata[keyStyle.Render("Total Length")] = value[len(value)-1]
 			} else {
 				number := h.ChildText("span.tracklist_num")
 				title := h.ChildText("span[itemprop=name] span.rendered_text")
@@ -143,5 +145,5 @@ func GetAlbum(link string) ([][]string, []string, []string, image.Image) {
 		})
 	})
 	c.Visit(link)
-	return rows, keys, values, img
+	return rows, metadata, img
 }
