@@ -49,24 +49,45 @@ func (m model) View() string {
 	return baseStyle.Render(m.table.View()) + "\n"
 }
 
-func PrintRows(rows []table.Row, columns []table.Column) int {
+func createColumns(columnNames []string, widths []int) []table.Column {
+	colums := make([]table.Column, 0)
+	for i, columnName := range columnNames {
+		colums = append(colums, table.Column{Title: columnName, Width: widths[i]})
+	}
+	return colums
+}
+
+func createRows(rowsString [][]string) []table.Row {
+	rows := make([]table.Row, 0)
+	for _, row := range rowsString {
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+func PrintRows(rowsString [][]string, columnsString []string, widths []int) int {
+	columns := createColumns(columnsString, widths)
+	rows := createRows(rowsString)
+	height := 7
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(7),
+		table.WithHeight(height),
 	)
 
 	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(false)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
+	if is_selectable {
+		s.Header = s.Header.
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("240")).
+			BorderBottom(true).
+			Bold(false)
+		s.Selected = s.Selected.
+			Foreground(lipgloss.Color("229")).
+			Background(lipgloss.Color("57")).
+			Bold(false)
+	}
 	t.SetStyles(s)
 
 	p := tea.NewProgram(model{t, false})
@@ -76,7 +97,7 @@ func PrintRows(rows []table.Row, columns []table.Column) int {
 		os.Exit(1)
 	}
 	if m, ok := m.(model); ok {
-		if m.exit == true {
+		if m.exit {
 			os.Exit(1)
 		}
 		return m.table.Cursor()
@@ -94,8 +115,9 @@ func PrintLink(link string) {
 	fmt.Println("\n" + link + "\n")
 }
 
-func PrintMetadata(keys []string, values []string) {
-	for i, key := range keys {
-		fmt.Println(key + values[i])
+func PrintMetadata(metadata map[string]string, color string) {
+	style := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color(color))
+	for k, v := range metadata {
+		fmt.Println(style.Render(k) + v)
 	}
 }
