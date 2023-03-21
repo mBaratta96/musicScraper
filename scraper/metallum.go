@@ -24,6 +24,15 @@ type SearchResponse struct {
 
 const METALLUMSTYLECOLOR string = "#b57614"
 
+var (
+	mBandColumnTitles      = [3]string{"Band Name", "Genre", "Country"}
+	mBandColumnWidths      = [3]int{64, 64, 32}
+	mAlbumlistColumnTitles = [4]string{"Name", "Type", "Year", "Country"}
+	mAlbumlistColumnWidths = [4]int{64, 16, 4, 8}
+	mAlbumColumnTitles     = [4]string{"N.", "Title", "Duration", "Lyric"}
+	mAlbumColumnWidths     = [4]int{4, 64, 8, 16}
+)
+
 func getMetadata(h *colly.HTMLElement) map[string]string {
 	keys, values := []string{}, []string{}
 	h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
@@ -77,8 +86,8 @@ func (m Metallum) FindBand() ([][]string, ColumnData, []string) {
 	})
 
 	columns := ColumnData{
-		Title: []string{"Band Name", "Genre", "Country"},
-		Width: []int{64, 64, 32},
+		Title: mBandColumnTitles[:],
+		Width: mBandColumnWidths[:],
 	}
 	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Search))
 	return rows, columns, links
@@ -112,8 +121,8 @@ func (m Metallum) GetAlbumList(link string) ([][]string, ColumnData, []string, m
 	})
 	c.Visit(link)
 	columns := ColumnData{
-		Title: []string{"Name", "Type", "Year", "Country"},
-		Width: []int{64, 16, 4, 8},
+		Title: mAlbumlistColumnTitles[:],
+		Width: mAlbumlistColumnWidths[:],
 	}
 	return rows, columns, album_links, metadata
 }
@@ -151,8 +160,8 @@ func (m Metallum) GetAlbum(album_link string) ([][]string, ColumnData, map[strin
 	})
 	c.Visit(album_link)
 	columns := ColumnData{
-		Title: []string{"N.", "Title", "Duration", "Lyric"},
-		Width: []int{4, 64, 8, 16},
+		Title: mAlbumColumnTitles[:],
+		Width: mAlbumColumnWidths[:],
 	}
 	return rows, columns, metadata, img
 }

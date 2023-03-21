@@ -16,6 +16,15 @@ const (
 	RYMSTYLECOLOR string = "#427b58"
 )
 
+var (
+	rBandColumnTitles      = [3]string{"Band Name", "Genre", "Country"}
+	rBandColumnWidths      = [3]int{64, 64, 32}
+	rAlbumlistColumnTitles = [7]string{"Rec.", "Title", "Year", "Reviews", "Rating", "Average", "Type"}
+	rAlbumlistColumnWidths = [7]int{4, 64, 4, 7, 7, 7, 12}
+	rAlbumColumnTitles     = [3]string{"N.", "Title", "Duration"}
+	rAlbumColumnWidths     = [3]int{4, 64, 8}
+)
+
 func (r RateYourMusic) FindBand() ([][]string, ColumnData, []string) {
 	c := colly.NewCollector()
 	rows := make([][]string, 0)
@@ -39,8 +48,8 @@ func (r RateYourMusic) FindBand() ([][]string, ColumnData, []string) {
 	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Search, " ", "%20", -1)))
 
 	columns := ColumnData{
-		Title: []string{"Band Name", "Genre", "Country"},
-		Width: []int{64, 64, 32},
+		Title: rBandColumnTitles[:],
+		Width: rBandColumnWidths[:],
 	}
 	return rows, columns, links
 }
@@ -99,8 +108,8 @@ func (r RateYourMusic) GetAlbumList(link string) ([][]string, ColumnData, []stri
 
 	c.Visit(link)
 	columns := ColumnData{
-		Title: []string{"Rec.", "Title", "Year", "Reviews", "Rating", "Average", "Type"},
-		Width: []int{4, 64, 4, 7, 7, 7, 12},
+		Title: rAlbumlistColumnTitles[:],
+		Width: rAlbumlistColumnWidths[:],
 	}
 	return rows, columns, links, metadata
 }
@@ -149,8 +158,8 @@ func (r RateYourMusic) GetAlbum(link string) ([][]string, ColumnData, map[string
 	})
 	c.Visit(link)
 	columns := ColumnData{
-		Title: []string{"N.", "Title", "Duration"},
-		Width: []int{4, 64, 8},
+		Title: rAlbumColumnTitles[:],
+		Width: rAlbumColumnWidths[:],
 	}
 	return rows, columns, metadata, img
 }
