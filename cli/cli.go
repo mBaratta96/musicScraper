@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"image"
 	"os"
+	"os/exec"
+	"runtime"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,6 +21,24 @@ type model struct {
 var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
 	BorderForeground(lipgloss.Color("240"))
+
+func CallClear() {
+	clear := make(map[string]func())
+	clear["linux"] = func() {
+		cmd := exec.Command("clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
+	clear["windows"] = func() {
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
+	value, ok := clear[runtime.GOOS]
+	if ok {
+		value()
+	}
+}
 
 func (m model) Init() tea.Cmd { return nil }
 
