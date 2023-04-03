@@ -6,11 +6,13 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/qeesung/image2ascii/convert"
+	"golang.org/x/term"
 )
 
 type model struct {
@@ -133,8 +135,41 @@ func PrintLink(link string) {
 }
 
 func PrintMetadata(metadata map[string]string, color string) {
-	style := lipgloss.NewStyle().Width(32).Foreground(lipgloss.Color(color))
-	for k, v := range metadata {
-		fmt.Println(style.Render(k) + v)
+	w, _, e := term.GetSize(0)
+	if e != nil {
+		panic(e)
+	}
+	max_key_length := 0
+	for k := range metadata {
+		if len(k) > max_key_length {
+			max_key_length = len(k)
+		}
+	}
+	max_key_length += 4
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
+	value_space := w - (max_key_length + 1)
+	for key, value := range metadata {
+		if len(value) > value_space {
+			var value2 string
+			firstI := 0
+			lastI := value_space
+			part := lastI
+			spacingS := strings.Repeat(" ", max_key_length-len(key))
+			spacing := spacingS
+
+			for i := 0; i < len(value); i += part {
+				value2 += spacingS + value[firstI:lastI] + "\n" + spacing
+				spacingS = strings.Repeat(" ", len(key)+1)
+				if ((len(value) - lastI) < part) || ((len(value) - lastI) == part) {
+					break
+				}
+				firstI = lastI
+				lastI += part
+			}
+			value2 += spacingS + value[lastI:]
+			fmt.Println(style.Render(key), value2)
+		} else {
+			fmt.Println(style.Render(key)+strings.Repeat(" ", max_key_length-len(key)), value)
+		}
 	}
 }
