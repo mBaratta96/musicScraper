@@ -16,14 +16,13 @@ func app(s scraper.Scraper) {
 	index := 0
 	if len(links) > 1 {
 		index = cli.PrintRows(rows, columns.Title, columns.Width)
-		cli.CallClear()
 	}
 	rows, columns, links, metadata := s.GetAlbumList(links[index])
+	cli.CallClear()
 	cli.PrintMetadata(metadata, s.GetStyleColor())
 	index = cli.PrintRows(rows, columns.Title, columns.Width)
-	cli.CallClear()
 	rows, columns, metadata, img := s.GetAlbum(links[index])
-
+	cli.CallClear()
 	if img != nil {
 		cli.PrintImage(img)
 	}
