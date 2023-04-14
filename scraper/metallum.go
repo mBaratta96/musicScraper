@@ -33,7 +33,7 @@ var (
 	mAlbumColumnWidths     = [4]int{4, 64, 8, 16}
 )
 
-func getMetadata(h *colly.HTMLElement, m map[string]string) {
+func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
 	keys, values := []string{}, []string{}
 	h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
 		keys = append(keys, h.Text)
@@ -41,10 +41,8 @@ func getMetadata(h *colly.HTMLElement, m map[string]string) {
 	h.ForEach("dd", func(_ int, h *colly.HTMLElement) {
 		values = append(values, strings.Replace(h.Text, "\n", "", -1))
 	})
-	// metadata := make(map[string]string)
 	for i, k := range keys {
-		// metadata[k] = values[i]
-		m[k] = values[i]
+		metadata[k] = values[i]
 	}
 	return
 }
