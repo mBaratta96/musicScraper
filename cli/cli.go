@@ -82,6 +82,9 @@ func createColumns(columnNames []string, widths []int) []table.Column {
 func createRows(rowsString [][]string) []table.Row {
 	rows := make([]table.Row, 0)
 	for _, row := range rowsString {
+		for i, el := range row {
+			row[i] = strings.TrimSpace(el)
+		}
 		rows = append(rows, row)
 	}
 	return rows
@@ -149,6 +152,8 @@ func PrintMetadata(metadata map[string]string, color string) {
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
 	value_space := w - (max_key_length + 1)
 	for key, value := range metadata {
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
 		if len(value) > value_space {
 			var value2 string
 			firstI := 0

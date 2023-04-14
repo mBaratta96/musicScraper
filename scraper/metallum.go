@@ -33,7 +33,7 @@ var (
 	mAlbumColumnWidths     = [4]int{4, 64, 8, 16}
 )
 
-func getMetadata(h *colly.HTMLElement) map[string]string {
+func getMetadata(h *colly.HTMLElement, m map[string]string) {
 	keys, values := []string{}, []string{}
 	h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
 		keys = append(keys, h.Text)
@@ -41,11 +41,12 @@ func getMetadata(h *colly.HTMLElement) map[string]string {
 	h.ForEach("dd", func(_ int, h *colly.HTMLElement) {
 		values = append(values, strings.Replace(h.Text, "\n", "", -1))
 	})
-	metadata := make(map[string]string)
+	// metadata := make(map[string]string)
 	for i, k := range keys {
-		metadata[k] = values[i]
+		// metadata[k] = values[i]
+		m[k] = values[i]
 	}
-	return metadata
+	return
 }
 
 func (m Metallum) FindBand() ([][]string, ColumnData, []string) {
@@ -117,7 +118,7 @@ func (m Metallum) GetAlbumList(link string) ([][]string, ColumnData, []string, m
 	})
 	metadata := make(map[string]string)
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
-		metadata = getMetadata(h)
+		getMetadata(h, metadata)
 	})
 	c.Visit(link)
 	columns := ColumnData{
@@ -154,9 +155,10 @@ func (m Metallum) GetAlbum(album_link string) ([][]string, ColumnData, map[strin
 			}
 		}
 	})
-	var metadata map[string]string
+
+	metadata := make(map[string]string)
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
-		metadata = getMetadata(h)
+		getMetadata(h, metadata)
 	})
 	c.Visit(album_link)
 	columns := ColumnData{
