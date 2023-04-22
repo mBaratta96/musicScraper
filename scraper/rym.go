@@ -86,7 +86,7 @@ func (r RateYourMusic) GetAlbumList(link string) ([][]string, ColumnData, []stri
 		metadata["Top Album"] = h.Text
 	})
 	c.OnHTML("div#column_container_right div.section_artist_biography > span.rendered_text", func(h *colly.HTMLElement) {
-		metadata["Biography"] = h.Text
+		metadata["Biography"] = strings.ReplaceAll(h.Text, "\n", " ")
 	})
 
 	rows := make([][]string, 0)
