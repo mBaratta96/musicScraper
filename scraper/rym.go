@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	_ "image/jpeg"
+	_ "image/png"
 
 	"github.com/gocolly/colly"
 )
@@ -124,7 +125,7 @@ func (r RateYourMusic) GetAlbum(link string) ([][]string, ColumnData, map[string
 
 	var img image.Image
 	c.OnResponse(func(r *colly.Response) {
-		if r.Headers.Get("content-type") == "image/jpg" {
+		if r.Headers.Get("content-type") == "image/jpg" || r.Headers.Get("content-type") == "image/png" {
 			var err error
 			img, _, err = image.Decode(bytes.NewReader(r.Body))
 			if err != nil {
