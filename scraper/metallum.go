@@ -27,7 +27,7 @@ const METALLUMSTYLECOLOR string = "#b57614"
 var (
 	mBandColumnTitles      = [3]string{"Band Name", "Genre", "Country"}
 	mBandColumnWidths      = [3]int{64, 64, 32}
-	mAlbumlistColumnTitles = [4]string{"Name", "Type", "Year", "Country"}
+	mAlbumlistColumnTitles = [4]string{"Name", "Type", "Year", "Reviews"}
 	mAlbumlistColumnWidths = [4]int{64, 16, 4, 8}
 	mAlbumColumnTitles     = [4]string{"N.", "Title", "Duration", "Lyric"}
 	mAlbumColumnWidths     = [4]int{4, 64, 8, 16}
