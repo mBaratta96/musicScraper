@@ -43,7 +43,12 @@ func (r RateYourMusic) FindBand() ([][]string, ColumnData, []string) {
 		rows = append(rows, []string{band_name, strings.Join(genres, "/"), country})
 	})
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r.StatusCode, "request was", r.Request.Headers, "\nError:", err)
+		fmt.Println(
+			"Request URL:", r.Request.URL,
+			"failed with response:", r.StatusCode,
+			"request was", r.Request.Headers,
+			"\nError:", err,
+		)
 	})
 
 	var columns ColumnData
@@ -113,7 +118,9 @@ func (r RateYourMusic) GetAlbumList(link string) ([][]string, ColumnData, []stri
 	return rows, columns, links, metadata
 }
 
-func GetAlbumListDiscography(link string, tableQuery string, albumTables []AlbumTable, hasBio bool) ([][]string, []string, map[string]string) {
+func GetAlbumListDiscography(
+	link string, tableQuery string, albumTables []AlbumTable, hasBio bool,
+) ([][]string, []string, map[string]string) {
 	c := colly.NewCollector()
 
 	metadata := make(map[string]string)
@@ -121,9 +128,11 @@ func GetAlbumListDiscography(link string, tableQuery string, albumTables []Album
 		metadata["Top Album"] = h.Text
 	})
 	if hasBio {
-		c.OnHTML("div#column_container_right div.section_artist_biography > span.rendered_text", func(h *colly.HTMLElement) {
-			metadata["Biography"] = strings.ReplaceAll(h.Text, "\n", " ")
-		})
+		c.OnHTML(
+			"div#column_container_right div.section_artist_biography > span.rendered_text",
+			func(h *colly.HTMLElement) {
+				metadata["Biography"] = strings.ReplaceAll(h.Text, "\n", " ")
+			})
 	}
 
 	rows := make([][]string, 0)
