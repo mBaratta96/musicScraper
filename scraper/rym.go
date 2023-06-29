@@ -83,26 +83,53 @@ type AlbumTable struct {
 }
 
 func (r RateYourMusic) GetAlbumList(link string) ([][]string, ColumnData, []string, map[string]string) {
+	var albumTables []AlbumTable
+	var tableQuery string
+	var hasBio bool
+	var visitLink string
+
+	if r.Credits {
+		albumTables = []AlbumTable{{Query: "div.disco_search_results > div.disco_release", Section: "Credits"}}
+		tableQuery = "div#column_container_left div.release_credits"
+		hasBio = false
+		visitLink = link + "/credits"
+	} else {
+		albumTables = []AlbumTable{
+			{Query: "div#disco_type_s > div.disco_release", Section: "Album"},
+			{Query: "div#disco_type_l > div.disco_release", Section: "Live Album"},
+			{Query: "div#disco_type_e > div.disco_release", Section: "EP"},
+			{Query: "div#disco_type_a > div.disco_release", Section: "Appears On"},
+			{Query: "div#disco_type_c > div.disco_release", Section: "Compilation"},
+		}
+		tableQuery = "div#column_container_left div#discography"
+		hasBio = true
+		visitLink = link
+	}
+	rows, links, metadata := GetAlbumListDiscography(visitLink, tableQuery, albumTables, hasBio)
+	columns := ColumnData{
+		Title: rAlbumlistColumnTitles[:],
+		Width: computeColumnWidth(rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:], rows),
+	}
+	return rows, columns, links, metadata
+}
+
+func GetAlbumListDiscography(link string, tableQuery string, albumTables []AlbumTable, hasBio bool) ([][]string, []string, map[string]string) {
 	c := colly.NewCollector()
 
 	metadata := make(map[string]string)
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
 		metadata["Top Album"] = h.Text
 	})
-	c.OnHTML("div#column_container_right div.section_artist_biography > span.rendered_text", func(h *colly.HTMLElement) {
-		metadata["Biography"] = strings.ReplaceAll(h.Text, "\n", " ")
-	})
+	if hasBio {
+		c.OnHTML("div#column_container_right div.section_artist_biography > span.rendered_text", func(h *colly.HTMLElement) {
+			metadata["Biography"] = strings.ReplaceAll(h.Text, "\n", " ")
+		})
+	}
 
 	rows := make([][]string, 0)
 	links := []string{}
-	albumTables := []AlbumTable{
-		{Query: "div#disco_type_s > div.disco_release", Section: "Album"},
-		{Query: "div#disco_type_l > div.disco_release", Section: "Live Album"},
-		{Query: "div#disco_type_e > div.disco_release", Section: "EP"},
-		{Query: "div#disco_type_a > div.disco_release", Section: "Appears On"},
-		{Query: "div#disco_type_c > div.disco_release", Section: "Compilation"},
-	}
-	c.OnHTML("div#column_container_left div#discography", func(h *colly.HTMLElement) {
+
+	c.OnHTML(tableQuery, func(h *colly.HTMLElement) {
 		for _, albumTable := range albumTables {
 			album_rows, album_links := addAlbums(h, albumTable.Query, albumTable.Section)
 			rows = append(rows, album_rows...)
@@ -110,16 +137,8 @@ func (r RateYourMusic) GetAlbumList(link string) ([][]string, ColumnData, []stri
 		}
 	})
 
-	var columns ColumnData
-	c.OnScraped(func(_ *colly.Response) {
-		columns = ColumnData{
-			Title: rAlbumlistColumnTitles[:],
-			Width: computeColumnWidth(rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:], rows),
-		}
-	})
-
 	c.Visit(link)
-	return rows, columns, links, metadata
+	return rows, links, metadata
 }
 
 func (r RateYourMusic) GetAlbum(link string) ([][]string, ColumnData, map[string]string, image.Image) {

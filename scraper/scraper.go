@@ -21,7 +21,8 @@ type Metallum struct {
 }
 
 type RateYourMusic struct {
-	Search string
+	Search  string
+	Credits bool
 }
 
 func computeColumnWidth(maxWidth []int, colTitles []string, rows [][]string) []int {
