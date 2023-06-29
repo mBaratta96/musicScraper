@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"image"
+	"math"
 	"os"
 	"os/exec"
 	"runtime"
@@ -72,11 +73,23 @@ func (m model) View() string {
 }
 
 func createColumns(columnNames []string, widths []int) []table.Column {
-	colums := make([]table.Column, 0)
-	for i, columnName := range columnNames {
-		colums = append(colums, table.Column{Title: columnName, Width: widths[i]})
+	columns := make([]table.Column, 0)
+	screenWidth, _, _ := term.GetSize(int(os.Stdout.Fd()))
+	totalColumnWidth := 0
+	for _, width := range widths {
+		totalColumnWidth += width
 	}
-	return colums
+	maxScreenSize := screenWidth - 8
+	for i, width := range widths {
+		var w int
+		if totalColumnWidth < maxScreenSize {
+			w = width
+		} else {
+			w = width - int(math.Ceil(float64(totalColumnWidth-maxScreenSize)/float64(len(widths))))
+		}
+		columns = append(columns, table.Column{Title: columnNames[i], Width: w})
+	}
+	return columns
 }
 
 func createRows(rowsString [][]string) []table.Row {

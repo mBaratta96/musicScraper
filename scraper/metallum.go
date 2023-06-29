@@ -44,7 +44,6 @@ func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
 	for i, k := range keys {
 		metadata[k] = values[i]
 	}
-	return
 }
 
 func (m Metallum) FindBand() ([][]string, ColumnData, []string) {
@@ -83,11 +82,15 @@ func (m Metallum) FindBand() ([][]string, ColumnData, []string) {
 	c.OnError(func(r *colly.Response, err error) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
 	})
+	var columns ColumnData
 
-	columns := ColumnData{
-		Title: mBandColumnTitles[:],
-		Width: mBandColumnWidths[:],
-	}
+	c.OnScraped(func(_ *colly.Response) {
+		columns = ColumnData{
+			Title: mBandColumnTitles[:],
+			Width: computeColumnWidth(mBandColumnWidths[:], mAlbumlistColumnTitles[:], rows),
+		}
+	})
+
 	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Search))
 	return rows, columns, links
 }
@@ -118,11 +121,16 @@ func (m Metallum) GetAlbumList(link string) ([][]string, ColumnData, []string, m
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
 		getMetadata(h, metadata)
 	})
+
+	var columns ColumnData
+	c.OnScraped(func(_ *colly.Response) {
+		columns = ColumnData{
+			Title: mAlbumlistColumnTitles[:],
+			Width: computeColumnWidth(mAlbumlistColumnWidths[:], mAlbumlistColumnTitles[:], rows),
+		}
+	})
+
 	c.Visit(link)
-	columns := ColumnData{
-		Title: mAlbumlistColumnTitles[:],
-		Width: mAlbumlistColumnWidths[:],
-	}
 	return rows, columns, album_links, metadata
 }
 
@@ -158,11 +166,16 @@ func (m Metallum) GetAlbum(album_link string) ([][]string, ColumnData, map[strin
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
 		getMetadata(h, metadata)
 	})
+
+	var columns ColumnData
+	c.OnScraped(func(_ *colly.Response) {
+		columns = ColumnData{
+			Title: mAlbumColumnTitles[:],
+			Width: computeColumnWidth(mAlbumColumnWidths[:], mAlbumColumnTitles[:], rows),
+		}
+	})
+
 	c.Visit(album_link)
-	columns := ColumnData{
-		Title: mAlbumColumnTitles[:],
-		Width: mAlbumColumnWidths[:],
-	}
 	return rows, columns, metadata, img
 }
 

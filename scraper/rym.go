@@ -46,12 +46,15 @@ func (r RateYourMusic) FindBand() ([][]string, ColumnData, []string) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r.StatusCode, "request was", r.Request.Headers, "\nError:", err)
 	})
 
-	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Search, " ", "%20", -1)))
+	var columns ColumnData
+	c.OnScraped(func(_ *colly.Response) {
+		columns = ColumnData{
+			Title: rBandColumnTitles[:],
+			Width: computeColumnWidth(rBandColumnWidths[:], rBandColumnTitles[:], rows),
+		}
+	})
 
-	columns := ColumnData{
-		Title: rBandColumnTitles[:],
-		Width: rBandColumnWidths[:],
-	}
+	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Search, " ", "%20", -1)))
 	return rows, columns, links
 }
 
@@ -107,11 +110,15 @@ func (r RateYourMusic) GetAlbumList(link string) ([][]string, ColumnData, []stri
 		}
 	})
 
+	var columns ColumnData
+	c.OnScraped(func(_ *colly.Response) {
+		columns = ColumnData{
+			Title: rAlbumlistColumnTitles[:],
+			Width: computeColumnWidth(rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:], rows),
+		}
+	})
+
 	c.Visit(link)
-	columns := ColumnData{
-		Title: rAlbumlistColumnTitles[:],
-		Width: rAlbumlistColumnWidths[:],
-	}
 	return rows, columns, links, metadata
 }
 
@@ -157,11 +164,16 @@ func (r RateYourMusic) GetAlbum(link string) ([][]string, ColumnData, map[string
 			}
 		})
 	})
+
+	var columns ColumnData
+	c.OnScraped(func(_ *colly.Response) {
+		columns = ColumnData{
+			Title: rAlbumColumnTitles[:],
+			Width: computeColumnWidth(rAlbumColumnWidths[:], rAlbumColumnTitles[:], rows),
+		}
+	})
+
 	c.Visit(link)
-	columns := ColumnData{
-		Title: rAlbumColumnTitles[:],
-		Width: rAlbumColumnWidths[:],
-	}
 	return rows, columns, metadata, img
 }
 
