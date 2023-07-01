@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"image"
+	"math"
 	"os"
 	"os/exec"
 	"runtime"
@@ -72,16 +73,31 @@ func (m model) View() string {
 }
 
 func createColumns(columnNames []string, widths []int) []table.Column {
-	colums := make([]table.Column, 0)
-	for i, columnName := range columnNames {
-		colums = append(colums, table.Column{Title: columnName, Width: widths[i]})
+	columns := make([]table.Column, 0)
+	screenWidth, _, _ := term.GetSize(int(os.Stdout.Fd()))
+	totalColumnWidth := 0
+	for _, width := range widths {
+		totalColumnWidth += width
 	}
-	return colums
+	maxScreenSize := screenWidth - 2*(len(columnNames)+1)
+	for i, width := range widths {
+		var w int
+		if totalColumnWidth < maxScreenSize {
+			w = width
+		} else {
+			w = width - int(math.Ceil(float64(totalColumnWidth-maxScreenSize)/float64(len(widths))))
+		}
+		columns = append(columns, table.Column{Title: columnNames[i], Width: w})
+	}
+	return columns
 }
 
 func createRows(rowsString [][]string) []table.Row {
 	rows := make([]table.Row, 0)
 	for _, row := range rowsString {
+		for i, el := range row {
+			row[i] = strings.TrimSpace(el)
+		}
 		rows = append(rows, row)
 	}
 	return rows
@@ -149,6 +165,8 @@ func PrintMetadata(metadata map[string]string, color string) {
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
 	value_space := w - (max_key_length + 1)
 	for key, value := range metadata {
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
 		if len(value) > value_space {
 			var value2 string
 			firstI := 0

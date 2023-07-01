@@ -2,6 +2,7 @@ package main
 
 import (
 	"cli"
+	"flag"
 	"fmt"
 	"os"
 	"scraper"
@@ -16,14 +17,13 @@ func app(s scraper.Scraper) {
 	index := 0
 	if len(links) > 1 {
 		index = cli.PrintRows(rows, columns.Title, columns.Width)
-		cli.CallClear()
 	}
 	rows, columns, links, metadata := s.GetAlbumList(links[index])
+	cli.CallClear()
 	cli.PrintMetadata(metadata, s.GetStyleColor())
 	index = cli.PrintRows(rows, columns.Title, columns.Width)
-	cli.CallClear()
 	rows, columns, metadata, img := s.GetAlbum(links[index])
-
+	cli.CallClear()
 	if img != nil {
 		cli.PrintImage(img)
 	}
@@ -33,18 +33,20 @@ func app(s scraper.Scraper) {
 }
 
 func main() {
-	if len(os.Args) < 3 {
+	website := flag.String("website", "", "Desired Website")
+	rym_credits := flag.Bool("credits", false, "Display RYM credits")
+	flag.Parse()
+	if len(flag.Args()) == 0 {
 		os.Exit(1)
 	}
-	website := os.Args[1]
-	search := os.Args[2]
-	if !(website == "metallum" || website == "rym") {
+	if !(*website == "metallum" || *website == "rym") {
 		fmt.Println("Wrong website")
 		os.Exit(1)
 	}
-	if website == "metallum" {
+	search := flag.Arg(0)
+	if *website == "metallum" {
 		app(scraper.Metallum{Search: search})
 	} else {
-		app(scraper.RateYourMusic{Search: search})
+		app(scraper.RateYourMusic{Search: search, Credits: *rym_credits})
 	}
 }
