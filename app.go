@@ -63,7 +63,10 @@ func main() {
 	if *website == "metallum" {
 		app(scraper.Metallum{Search: search})
 	} else {
-		readRYMRatings(configFilePath)
-		app(scraper.RateYourMusic{Search: search, Credits: *rymCredits})
+		app(scraper.RateYourMusic{
+			Search:  search,
+			Credits: *rymCredits,
+			Ratings: scraper.ReadRYMRatings(configFilePath),
+		})
 	}
 }
