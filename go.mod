@@ -1,4 +1,4 @@
-module music-scrapper
+module musicScrapper
 
 go 1.18
 
