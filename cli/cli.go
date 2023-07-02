@@ -30,12 +30,16 @@ func CallClear() {
 	clear["linux"] = func() {
 		cmd := exec.Command("clear")
 		cmd.Stdout = os.Stdout
-		cmd.Run()
+		if err := cmd.Run(); err != nil {
+			panic("Error in Linux clear terminal")
+		}
 	}
 	clear["windows"] = func() {
 		cmd := exec.Command("cmd", "/c", "cls")
 		cmd.Stdout = os.Stdout
-		cmd.Run()
+		if err := cmd.Run(); err != nil {
+			panic("Error in Windows clear terminal")
+		}
 	}
 	value, ok := clear[runtime.GOOS]
 	if ok {
@@ -106,7 +110,13 @@ func createRows(rowsString [][]string) []table.Row {
 func PrintRows(rowsString [][]string, columnsString []string, widths []int) int {
 	columns := createColumns(columnsString, widths)
 	rows := createRows(rowsString)
-	height := 7
+	_, screenHeigth, _ := term.GetSize(int(os.Stdout.Fd()))
+	var height int
+	if screenHeigth/2 < len(rows) {
+		height = screenHeigth / 2
+	} else {
+		height = len(rows)
+	}
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
@@ -132,10 +142,12 @@ func PrintRows(rowsString [][]string, columnsString []string, widths []int) int 
 		os.Exit(1)
 	}
 	if m, ok := m.(model); ok {
-		if m.exit {
-			os.Exit(1)
+		if !m.exit {
+			return m.table.Cursor()
 		}
-		return m.table.Cursor()
+	} else {
+		fmt.Println("Error in table")
+		os.Exit(1)
 	}
 	return -1
 }

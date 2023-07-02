@@ -16,15 +16,6 @@ type Scraper interface {
 	GetStyleColor() string
 }
 
-type Metallum struct {
-	Search string
-}
-
-type RateYourMusic struct {
-	Search  string
-	Credits bool
-}
-
 func computeColumnWidth(maxWidth []int, colTitles []string, rows [][]string) []int {
 	widths := []int{}
 	padding := 2

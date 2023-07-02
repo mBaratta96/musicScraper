@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"strconv"
 	"strings"
 
 	_ "image/jpeg"
 	_ "image/png"
 
 	"github.com/gocolly/colly"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -20,11 +22,17 @@ const (
 var (
 	rBandColumnTitles      = [3]string{"Band Name", "Genre", "Country"}
 	rBandColumnWidths      = [3]int{64, 64, 32}
-	rAlbumlistColumnTitles = [7]string{"Rec.", "Title", "Year", "Reviews", "Rating", "Average", "Type"}
-	rAlbumlistColumnWidths = [7]int{4, 64, 4, 7, 7, 7, 12}
+	rAlbumlistColumnTitles = [8]string{"Rec.", "Title", "Year", "Reviews", "Ratings", "Average", "Type", "Vote"}
+	rAlbumlistColumnWidths = [8]int{4, 64, 4, 7, 7, 7, 12, 5}
 	rAlbumColumnTitles     = [3]string{"N.", "Title", "Duration"}
 	rAlbumColumnWidths     = [3]int{4, 64, 8}
 )
+
+type RateYourMusic struct {
+	Search  string
+	Ratings RYMRatingSlice
+	Credits bool
+}
 
 func (r RateYourMusic) FindBand() ([][]string, ColumnData, []string) {
 	c := colly.NewCollector()
@@ -63,10 +71,30 @@ func (r RateYourMusic) FindBand() ([][]string, ColumnData, []string) {
 	return rows, columns, links
 }
 
-func addAlbums(h *colly.HTMLElement, query string, section string) ([][]string, []string) {
+func getVote(divId string, ratings RYMRatingSlice) string {
+	splitted := strings.Split(divId, "_")
+	isListened := false
+	var vote int
+	if release_id, err := strconv.Atoi(splitted[len(splitted)-1]); err == nil {
+		if slices.Contains(ratings.Ids, release_id) {
+			isListened = true
+			vote = ratings.Ratings[slices.Index(ratings.Ids, release_id)]
+		}
+	} else {
+		panic(err)
+	}
+	gradedVote := ""
+	if isListened {
+		gradedVote = fmt.Sprintf("%.1f", float32(vote)/2)
+	}
+	return gradedVote
+}
+
+func addAlbums(h *colly.HTMLElement, query string, section string, userRatings RYMRatingSlice) ([][]string, []string) {
 	links := []string{}
 	rows := make([][]string, 0)
 	h.ForEach(query, func(_ int, h *colly.HTMLElement) {
+		gradedVote := getVote(h.Attr("id"), userRatings)
 		title := h.ChildText("div.disco_info a.album")
 		year := h.ChildText("div.disco_info span[class*='disco_year']")
 		reviews := h.ChildText("div.disco_reviews")
@@ -76,7 +104,7 @@ func addAlbums(h *colly.HTMLElement, query string, section string) ([][]string, 
 		if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
 			recommended = ""
 		}
-		rows = append(rows, []string{recommended, title, year, reviews, ratings, average, section})
+		rows = append(rows, []string{recommended, title, year, reviews, ratings, average, section, gradedVote})
 		links = append(links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
 	})
 	return rows, links
@@ -87,8 +115,8 @@ type AlbumTable struct {
 	Section string
 }
 
-func GetAlbumListDiscography(
-	link string, tableQuery string, albumTables []AlbumTable, hasBio bool,
+func getAlbumListDiscography(
+	link string, tableQuery string, albumTables []AlbumTable, hasBio bool, userRatings RYMRatingSlice,
 ) ([][]string, []string, map[string]string) {
 	c := colly.NewCollector()
 
@@ -109,7 +137,7 @@ func GetAlbumListDiscography(
 
 	c.OnHTML(tableQuery, func(h *colly.HTMLElement) {
 		for _, albumTable := range albumTables {
-			album_rows, album_links := addAlbums(h, albumTable.Query, albumTable.Section)
+			album_rows, album_links := addAlbums(h, albumTable.Query, albumTable.Section, userRatings)
 			rows = append(rows, album_rows...)
 			links = append(links, album_links...)
 		}
@@ -142,7 +170,7 @@ func (r RateYourMusic) GetAlbumList(link string) ([][]string, ColumnData, []stri
 		hasBio = true
 		visitLink = link
 	}
-	rows, links, metadata := GetAlbumListDiscography(visitLink, tableQuery, albumTables, hasBio)
+	rows, links, metadata := getAlbumListDiscography(visitLink, tableQuery, albumTables, hasBio, r.Ratings)
 	columns := ColumnData{
 		Title: rAlbumlistColumnTitles[:],
 		Width: computeColumnWidth(rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:], rows),
@@ -170,6 +198,7 @@ func (r RateYourMusic) GetAlbum(link string) ([][]string, ColumnData, map[string
 	})
 
 	metadata := make(map[string]string)
+
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
 		key := h.ChildText("th")
 		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
@@ -177,6 +206,16 @@ func (r RateYourMusic) GetAlbum(link string) ([][]string, ColumnData, map[string
 			metadata[key] = value
 		}
 	})
+	c.OnHTML("div.album_title > input.album_shortcut", func(h *colly.HTMLElement) {
+		albumId := h.Attr("value")
+		if id, err := strconv.Atoi(albumId[6 : len(albumId)-1]); err == nil {
+			if slices.Contains(r.Ratings.Ids, id) {
+				vote := r.Ratings.Ratings[slices.Index(r.Ratings.Ids, id)]
+				metadata["Vote"] = fmt.Sprintf("%.1f", float32(vote)/2)
+			}
+		}
+	})
+
 	rows := make([][]string, 0)
 
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {

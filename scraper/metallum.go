@@ -33,6 +33,10 @@ var (
 	mAlbumColumnWidths     = [4]int{4, 64, 8, 16}
 )
 
+type Metallum struct {
+	Search string
+}
+
 func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
 	keys, values := []string{}, []string{}
 	h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
