@@ -87,7 +87,7 @@ type AlbumTable struct {
 	Section string
 }
 
-func GetAlbumListDiscography(
+func getAlbumListDiscography(
 	link string, tableQuery string, albumTables []AlbumTable, hasBio bool,
 ) ([][]string, []string, map[string]string) {
 	c := colly.NewCollector()
@@ -142,7 +142,7 @@ func (r RateYourMusic) GetAlbumList(link string) ([][]string, ColumnData, []stri
 		hasBio = true
 		visitLink = link
 	}
-	rows, links, metadata := GetAlbumListDiscography(visitLink, tableQuery, albumTables, hasBio)
+	rows, links, metadata := getAlbumListDiscography(visitLink, tableQuery, albumTables, hasBio)
 	columns := ColumnData{
 		Title: rAlbumlistColumnTitles[:],
 		Width: computeColumnWidth(rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:], rows),

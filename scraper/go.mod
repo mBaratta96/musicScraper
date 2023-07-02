@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
+	github.com/gocarina/gocsv v0.0.0-20230616125104-99d496ca653d
 	github.com/gocolly/colly v1.2.0
 )
 

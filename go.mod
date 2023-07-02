@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	cli v0.0.0-00010101000000-000000000000
-	github.com/gocarina/gocsv v0.0.0-20230616125104-99d496ca653d
 	scraper v0.0.0-00010101000000-000000000000
 )
 
@@ -21,6 +20,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.6.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/gocarina/gocsv v0.0.0-20230616125104-99d496ca653d // indirect
 	github.com/gocolly/colly v1.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.3.1 // indirect
