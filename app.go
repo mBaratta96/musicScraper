@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"scraper"
+	//"github.com/gocarina/gocsv"
 )
 
 func app(s scraper.Scraper) {
@@ -19,17 +20,22 @@ func app(s scraper.Scraper) {
 		index = cli.PrintRows(rows, columns.Title, columns.Width)
 	}
 	rows, columns, links, metadata := s.GetAlbumList(links[index])
-	cli.CallClear()
-	cli.PrintMetadata(metadata, s.GetStyleColor())
-	index = cli.PrintRows(rows, columns.Title, columns.Width)
-	rows, columns, metadata, img := s.GetAlbum(links[index])
-	cli.CallClear()
-	if img != nil {
-		cli.PrintImage(img)
+	for true {
+		cli.CallClear()
+		cli.PrintMetadata(metadata, s.GetStyleColor())
+		index = cli.PrintRows(rows, columns.Title, columns.Width)
+		if index == -1 {
+			break
+		}
+		rows, columns, metadata, img := s.GetAlbum(links[index])
+		cli.CallClear()
+		if img != nil {
+			cli.PrintImage(img)
+		}
+		cli.PrintMetadata(metadata, s.GetStyleColor())
+		cli.PrintLink(links[index])
+		_ = cli.PrintRows(rows, columns.Title, columns.Width)
 	}
-	cli.PrintMetadata(metadata, s.GetStyleColor())
-	cli.PrintLink(links[index])
-	_ = cli.PrintRows(rows, columns.Title, columns.Width)
 }
 
 func main() {
