@@ -110,7 +110,13 @@ func createRows(rowsString [][]string) []table.Row {
 func PrintRows(rowsString [][]string, columnsString []string, widths []int) int {
 	columns := createColumns(columnsString, widths)
 	rows := createRows(rowsString)
-	height := 14
+	_, screenHeigth, _ := term.GetSize(int(os.Stdout.Fd()))
+	var height int
+	if screenHeigth/2 < len(rows) {
+		height = screenHeigth / 2
+	} else {
+		height = len(rows)
+	}
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),

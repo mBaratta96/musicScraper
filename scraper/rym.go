@@ -198,6 +198,7 @@ func (r RateYourMusic) GetAlbum(link string) ([][]string, ColumnData, map[string
 	})
 
 	metadata := make(map[string]string)
+
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
 		key := h.ChildText("th")
 		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
@@ -205,6 +206,16 @@ func (r RateYourMusic) GetAlbum(link string) ([][]string, ColumnData, map[string
 			metadata[key] = value
 		}
 	})
+	c.OnHTML("div.album_title > input.album_shortcut", func(h *colly.HTMLElement) {
+		albumId := h.Attr("value")
+		if id, err := strconv.Atoi(albumId[6 : len(albumId)-1]); err == nil {
+			if slices.Contains(r.Ratings.Ids, id) {
+				vote := r.Ratings.Ratings[slices.Index(r.Ratings.Ids, id)]
+				metadata["Vote"] = fmt.Sprintf("%.1f", float32(vote)/2)
+			}
+		}
+	})
+
 	rows := make([][]string, 0)
 
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
