@@ -29,7 +29,7 @@ var (
 )
 
 type RateYourMusic struct {
-	Link    *string
+	Link    string
 	Ratings RYMRatingSlice
 	Credits bool
 }
@@ -119,7 +119,7 @@ func (r *RateYourMusic) FindBand(data *ScrapedData) ([]int, []string) {
 		data.Rows = append(data.Rows, []string{band_name, strings.Join(genres, "/"), country})
 	})
 
-	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", strings.Replace(*r.Link, " ", "%20", -1)))
+	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Link, " ", "%20", -1)))
 	return rBandColumnWidths[:], rBandColumnTitles[:]
 }
 
@@ -133,7 +133,7 @@ func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 		albumTables = []AlbumTable{{Query: "div.disco_search_results > div.disco_release", Section: "Credits"}}
 		tableQuery = "div#column_container_left div.release_credits"
 		hasBio = false
-		visitLink = *r.Link + "/credits"
+		visitLink = r.Link + "/credits"
 	} else {
 		albumTables = []AlbumTable{
 			{Query: "div#disco_type_s > div.disco_release", Section: "Album"},
@@ -144,7 +144,7 @@ func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 		}
 		tableQuery = "div#column_container_left div#discography"
 		hasBio = true
-		visitLink = *r.Link
+		visitLink = r.Link
 	}
 	getAlbumListDiscography(data, visitLink, tableQuery, albumTables, hasBio, r.Ratings)
 	return rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:]
@@ -199,7 +199,7 @@ func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
 		})
 	})
 
-	c.Visit(*r.Link)
+	c.Visit(r.Link)
 	return rAlbumColumnWidths[:], rAlbumColumnTitles[:]
 }
 
@@ -208,5 +208,5 @@ func (r *RateYourMusic) GetStyleColor() string {
 }
 
 func (r *RateYourMusic) SetLink(link string) {
-	r.Link = &link
+	r.Link = link
 }

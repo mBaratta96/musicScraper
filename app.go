@@ -63,10 +63,10 @@ func main() {
 	}
 	configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
 	if *website == "metallum" {
-		app(&scraper.Metallum{Link: &search})
+		app(&scraper.Metallum{Link: search})
 	} else {
 		app(&scraper.RateYourMusic{
-			Link:    &search,
+			Link:    search,
 			Credits: *rymCredits,
 			Ratings: scraper.ReadRYMRatings(configFilePath),
 		})
