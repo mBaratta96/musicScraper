@@ -22,7 +22,7 @@ func app(s scraper.Scraper) {
 	if index == -1 {
 		os.Exit(1)
 	}
-	scraper.SetLink(&s, data.Links[index])
+	s.SetLink(data.Links[index])
 	data = scraper.ScrapeData(s.GetAlbumList)
 	for true {
 		cli.CallClear()
@@ -31,7 +31,7 @@ func app(s scraper.Scraper) {
 		if index == -1 {
 			break
 		}
-		scraper.SetLink(&s, data.Links[index])
+		s.SetLink(data.Links[index])
 		albumData := scraper.ScrapeData(s.GetAlbum)
 		cli.CallClear()
 		if data.Image != nil {
@@ -63,9 +63,9 @@ func main() {
 	}
 	configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
 	if *website == "metallum" {
-		app(scraper.Metallum{Link: search})
+		app(&scraper.Metallum{Link: search})
 	} else {
-		app(scraper.RateYourMusic{
+		app(&scraper.RateYourMusic{
 			Link:    search,
 			Credits: *rymCredits,
 			Ratings: scraper.ReadRYMRatings(configFilePath),

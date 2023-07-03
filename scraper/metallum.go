@@ -50,7 +50,7 @@ func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
 	}
 }
 
-func (m Metallum) FindBand(data *ScrapedData) ([]int, []string) {
+func (m *Metallum) FindBand(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 
 	c.OnResponse(func(r *colly.Response) {
@@ -88,7 +88,7 @@ func (m Metallum) FindBand(data *ScrapedData) ([]int, []string) {
 	return mBandColumnWidths[:], mAlbumColumnTitles[:]
 }
 
-func (m Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
+func (m *Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
@@ -105,9 +105,6 @@ func (m Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 		})
 		data.Rows = append(data.Rows, []string{row[0], row[1], row[2], row[3]})
 	})
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
-	})
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
 		getMetadata(h, data.Metadata)
 	})
@@ -116,7 +113,7 @@ func (m Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	return mAlbumlistColumnWidths[:], mAlbumlistColumnTitles[:]
 }
 
-func (m Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
+func (m *Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 
 	c.OnHTML("div#album_tabs_tracklist tr.even, div#album_tabs_tracklist tr.odd", func(h *colly.HTMLElement) {
@@ -150,10 +147,10 @@ func (m Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
 	return mAlbumColumnWidths[:], mAlbumColumnTitles[:]
 }
 
-func (m Metallum) GetStyleColor() string {
+func (m *Metallum) GetStyleColor() string {
 	return METALLUMSTYLECOLOR
 }
 
-// func SetLink(link string) {
-// 	m.Link = link
-// }
+func (m *Metallum) SetLink(link string) {
+	m.Link = link
+}

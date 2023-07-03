@@ -2,7 +2,6 @@ package scraper
 
 import (
 	"image"
-	"reflect"
 )
 
 type ColumnData struct {
@@ -23,6 +22,7 @@ type Scraper interface {
 	GetAlbumList(*ScrapedData) ([]int, []string)
 	GetAlbum(*ScrapedData) ([]int, []string)
 	GetStyleColor() string
+	SetLink(string)
 }
 
 type TableConstructor func(*ScrapedData) ([]int, []string)
@@ -70,12 +70,4 @@ func createColumns(widths []int, titles []string, rows [][]string) ColumnData {
 		Title: titles[:],
 		Width: computeColumnWidth(widths, titles, rows),
 	}
-}
-
-func SetLink(s interface{}, link string) {
-	stype := reflect.ValueOf(s).Elem()
-	tmp := reflect.New(stype.Elem().Type()).Elem()
-	tmp.Set(stype.Elem())
-	tmp.FieldByName("Link").SetString(link)
-	stype.Set(tmp)
 }
