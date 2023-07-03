@@ -104,7 +104,7 @@ func getAlbumListDiscography(
 	c.Visit(link)
 }
 
-func (r RateYourMusic) FindBand(data *ScrapedData) ([]int, []string) {
+func (r *RateYourMusic) FindBand(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
@@ -123,7 +123,7 @@ func (r RateYourMusic) FindBand(data *ScrapedData) ([]int, []string) {
 	return rBandColumnWidths[:], rBandColumnTitles[:]
 }
 
-func (r RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
+func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	var albumTables []AlbumTable
 	var tableQuery string
 	var hasBio bool
@@ -150,7 +150,7 @@ func (r RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	return rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:]
 }
 
-func (r RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
+func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
@@ -203,10 +203,10 @@ func (r RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
 	return rAlbumColumnWidths[:], rAlbumColumnTitles[:]
 }
 
-func (r RateYourMusic) GetStyleColor() string {
+func (r *RateYourMusic) GetStyleColor() string {
 	return RYMSTYLECOLOR
 }
 
-// func (r *RateYourMusic) SetLink(link string) {
-// 	r.Link = link
-// }
+func (r *RateYourMusic) SetLink(link string) {
+	r.Link = &link
+}
