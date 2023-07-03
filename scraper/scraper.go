@@ -72,10 +72,15 @@ func createColumns(widths []int, titles []string, rows [][]string) ColumnData {
 	}
 }
 
+// func SetLink(s interface{}, link string) {
+// 	stype := reflect.ValueOf(s).Elem()
+// 	tmp := reflect.New(stype.Elem().Type()).Elem()
+// 	tmp.Set(stype.Elem())
+// 	tmp.FieldByName("Link").SetString(link)
+// 	stype.Set(tmp)
+// }
+
 func SetLink(s interface{}, link string) {
 	stype := reflect.ValueOf(s).Elem()
-	tmp := reflect.New(stype.Elem().Type()).Elem()
-	tmp.Set(stype.Elem())
-	tmp.FieldByName("Link").SetString(link)
-	stype.Set(tmp)
+	stype.Elem().FieldByName("Link").Set(reflect.ValueOf(&link))
 }

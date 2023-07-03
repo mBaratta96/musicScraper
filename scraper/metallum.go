@@ -34,7 +34,7 @@ var (
 )
 
 type Metallum struct {
-	Link string
+	Link *string
 }
 
 func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
@@ -105,14 +105,11 @@ func (m Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 		})
 		data.Rows = append(data.Rows, []string{row[0], row[1], row[2], row[3]})
 	})
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
-	})
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
 		getMetadata(h, data.Metadata)
 	})
 
-	c.Visit(m.Link)
+	c.Visit(*m.Link)
 	return mAlbumlistColumnWidths[:], mAlbumlistColumnTitles[:]
 }
 
@@ -146,7 +143,7 @@ func (m Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
 		getMetadata(h, data.Metadata)
 	})
 
-	c.Visit(m.Link)
+	c.Visit(*m.Link)
 	return mAlbumColumnWidths[:], mAlbumColumnTitles[:]
 }
 
