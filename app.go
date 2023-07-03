@@ -22,7 +22,6 @@ func app(s scraper.Scraper) {
 	if index == -1 {
 		os.Exit(1)
 	}
-	fmt.Println("LINK1: ", data.Links[index])
 	scraper.SetLink(&s, data.Links[index])
 	data = scraper.ScrapeData(s.GetAlbumList)
 	for true {
