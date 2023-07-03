@@ -154,6 +154,6 @@ func (m Metallum) GetStyleColor() string {
 	return METALLUMSTYLECOLOR
 }
 
-func (m Metallum) SetLink(link string) {
-	m.Link = link
-}
+// func SetLink(link string) {
+// 	m.Link = link
+// }

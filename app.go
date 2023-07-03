@@ -22,7 +22,8 @@ func app(s scraper.Scraper) {
 	if index == -1 {
 		os.Exit(1)
 	}
-	s.SetLink(data.Links[index])
+	fmt.Println("LINK1: ", data.Links[index])
+	scraper.SetLink(&s, data.Links[index])
 	data = scraper.ScrapeData(s.GetAlbumList)
 	for true {
 		cli.CallClear()
@@ -31,15 +32,15 @@ func app(s scraper.Scraper) {
 		if index == -1 {
 			break
 		}
-		s.SetLink(data.Links[index])
-		data = scraper.ScrapeData(s.GetAlbum)
+		scraper.SetLink(&s, data.Links[index])
+		albumData := scraper.ScrapeData(s.GetAlbum)
 		cli.CallClear()
 		if data.Image != nil {
 			cli.PrintImage(data.Image)
 		}
-		cli.PrintMetadata(data.Metadata, s.GetStyleColor())
+		cli.PrintMetadata(albumData.Metadata, s.GetStyleColor())
 		cli.PrintLink(data.Links[index])
-		_ = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
+		_ = cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width)
 	}
 }
 

@@ -215,6 +215,6 @@ func (r RateYourMusic) GetStyleColor() string {
 	return RYMSTYLECOLOR
 }
 
-func (r RateYourMusic) SetLink(link string) {
-	r.Link = link
-}
+// func (r *RateYourMusic) SetLink(link string) {
+// 	r.Link = link
+// }
