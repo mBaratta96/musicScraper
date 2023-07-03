@@ -10,34 +10,36 @@ import (
 )
 
 func app(s scraper.Scraper) {
-	rows, columns, links := s.FindBand()
-	if len(links) == 0 {
+	data := scraper.ScrapeData(s.FindBand)
+	if len(data.Links) == 0 {
 		fmt.Println("No result for your search")
 		os.Exit(0)
 	}
 	index := 0
-	if len(links) > 1 {
-		index = cli.PrintRows(rows, columns.Title, columns.Width)
+	if len(data.Links) > 1 {
+		index = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
 	}
 	if index == -1 {
 		os.Exit(1)
 	}
-	rows, columns, links, metadata := s.GetAlbumList(links[index])
+	scraper.SetLink(&s, data.Links[index])
+	data = scraper.ScrapeData(s.GetAlbumList)
 	for true {
 		cli.CallClear()
-		cli.PrintMetadata(metadata, s.GetStyleColor())
-		index = cli.PrintRows(rows, columns.Title, columns.Width)
+		cli.PrintMetadata(data.Metadata, s.GetStyleColor())
+		index = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
 		if index == -1 {
 			break
 		}
-		rows, columns, metadata, img := s.GetAlbum(links[index])
+		scraper.SetLink(&s, data.Links[index])
+		albumData := scraper.ScrapeData(s.GetAlbum)
 		cli.CallClear()
-		if img != nil {
-			cli.PrintImage(img)
+		if data.Image != nil {
+			cli.PrintImage(data.Image)
 		}
-		cli.PrintMetadata(metadata, s.GetStyleColor())
-		cli.PrintLink(links[index])
-		_ = cli.PrintRows(rows, columns.Title, columns.Width)
+		cli.PrintMetadata(albumData.Metadata, s.GetStyleColor())
+		cli.PrintLink(data.Links[index])
+		_ = cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width)
 	}
 }
 
@@ -61,10 +63,10 @@ func main() {
 	}
 	configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
 	if *website == "metallum" {
-		app(scraper.Metallum{Search: search})
+		app(scraper.Metallum{Link: search})
 	} else {
 		app(scraper.RateYourMusic{
-			Search:  search,
+			Link:    search,
 			Credits: *rymCredits,
 			Ratings: scraper.ReadRYMRatings(configFilePath),
 		})

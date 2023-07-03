@@ -34,7 +34,7 @@ var (
 )
 
 type Metallum struct {
-	Search string
+	Link string
 }
 
 func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
@@ -50,11 +50,8 @@ func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
 	}
 }
 
-func (m Metallum) FindBand() ([][]string, ColumnData, []string) {
+func (m Metallum) FindBand(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
-
-	rows := make([][]string, 0)
-	links := make([]string, 0)
 
 	c.OnResponse(func(r *colly.Response) {
 		var response SearchResponse
@@ -73,83 +70,62 @@ func (m Metallum) FindBand() ([][]string, ColumnData, []string) {
 					}
 					band := doc.Find("a").First()
 					row[0] = band.Text()
-					links = append(links, band.AttrOr("href", ""))
+					data.Links = append(data.Links, band.AttrOr("href", ""))
 				case 1:
 					row[1] = node
 				case 2:
 					row[2] = node
 				}
 			}
-			rows = append(rows, []string{row[0], row[1], row[2]})
+			data.Rows = append(data.Rows, []string{row[0], row[1], row[2]})
 		}
 	})
-	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
-	})
-	var columns ColumnData
-
 	c.OnScraped(func(_ *colly.Response) {
-		columns = ColumnData{
-			Title: mBandColumnTitles[:],
-			Width: computeColumnWidth(mBandColumnWidths[:], mAlbumlistColumnTitles[:], rows),
-		}
+		data.Columns = createColumns(mBandColumnWidths[:], mAlbumlistColumnTitles[:], data.Rows)
 	})
 
-	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Search))
-	return rows, columns, links
+	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Link))
+	return mBandColumnWidths[:], mAlbumColumnTitles[:]
 }
 
-func (m Metallum) GetAlbumList(link string) ([][]string, ColumnData, []string, map[string]string) {
+func (m Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
 	})
 
-	rows := make([][]string, 0)
-	album_links := make([]string, 0)
 	c.OnHTML("table.display.discog tbody tr", func(h *colly.HTMLElement) {
 		var row [4]string
 		h.ForEach(".album,.demo,.other,td a[href]", func(i int, h *colly.HTMLElement) {
 			row[i] = h.Text
 			if i == 0 {
-				album_links = append(album_links, h.Attr("href"))
+				data.Links = append(data.Links, h.Attr("href"))
 			}
 		})
-		rows = append(rows, []string{row[0], row[1], row[2], row[3]})
+		data.Rows = append(data.Rows, []string{row[0], row[1], row[2], row[3]})
 	})
 	c.OnError(func(r *colly.Response, err error) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
 	})
-	metadata := make(map[string]string)
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
-		getMetadata(h, metadata)
+		getMetadata(h, data.Metadata)
 	})
 
-	var columns ColumnData
-	c.OnScraped(func(_ *colly.Response) {
-		columns = ColumnData{
-			Title: mAlbumlistColumnTitles[:],
-			Width: computeColumnWidth(mAlbumlistColumnWidths[:], mAlbumlistColumnTitles[:], rows),
-		}
-	})
-
-	c.Visit(link)
-	return rows, columns, album_links, metadata
+	c.Visit(m.Link)
+	return mAlbumlistColumnWidths[:], mAlbumlistColumnTitles[:]
 }
 
-func (m Metallum) GetAlbum(album_link string) ([][]string, ColumnData, map[string]string, image.Image) {
+func (m Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
-	rows := make([][]string, 0)
 
 	c.OnHTML("div#album_tabs_tracklist tr.even, div#album_tabs_tracklist tr.odd", func(h *colly.HTMLElement) {
 		var row [4]string
 		h.ForEach("td", func(i int, h *colly.HTMLElement) {
 			row[i] = h.Text
 		})
-		rows = append(rows, []string{row[0], row[1], row[2], row[3]})
+		data.Rows = append(data.Rows, []string{row[0], row[1], row[2], row[3]})
 	})
-	var img image.Image
 
 	c.OnHTML("a#cover.image", func(h *colly.HTMLElement) {
 		image_src := h.ChildAttr("img", "src")
@@ -159,30 +135,25 @@ func (m Metallum) GetAlbum(album_link string) ([][]string, ColumnData, map[strin
 	c.OnResponse(func(r *colly.Response) {
 		if r.Headers.Get("content-type") == "image/jpeg" {
 			var err error
-			img, _, err = image.Decode(bytes.NewReader(r.Body))
+			data.Image, _, err = image.Decode(bytes.NewReader(r.Body))
 			if err != nil {
 				fmt.Println(err)
 			}
 		}
 	})
 
-	metadata := make(map[string]string)
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
-		getMetadata(h, metadata)
+		getMetadata(h, data.Metadata)
 	})
 
-	var columns ColumnData
-	c.OnScraped(func(_ *colly.Response) {
-		columns = ColumnData{
-			Title: mAlbumColumnTitles[:],
-			Width: computeColumnWidth(mAlbumColumnWidths[:], mAlbumColumnTitles[:], rows),
-		}
-	})
-
-	c.Visit(album_link)
-	return rows, columns, metadata, img
+	c.Visit(m.Link)
+	return mAlbumColumnWidths[:], mAlbumColumnTitles[:]
 }
 
 func (m Metallum) GetStyleColor() string {
 	return METALLUMSTYLECOLOR
 }
+
+// func SetLink(link string) {
+// 	m.Link = link
+// }

@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"image"
+	"reflect"
 )
 
 type ColumnData struct {
@@ -9,11 +10,35 @@ type ColumnData struct {
 	Width []int
 }
 
+type ScrapedData struct {
+	Rows     [][]string
+	Columns  ColumnData
+	Links    []string
+	Metadata map[string]string
+	Image    image.Image
+}
+
 type Scraper interface {
-	FindBand() ([][]string, ColumnData, []string)
-	GetAlbumList(string) ([][]string, ColumnData, []string, map[string]string)
-	GetAlbum(string) ([][]string, ColumnData, map[string]string, image.Image)
+	FindBand(*ScrapedData) ([]int, []string)
+	GetAlbumList(*ScrapedData) ([]int, []string)
+	GetAlbum(*ScrapedData) ([]int, []string)
 	GetStyleColor() string
+}
+
+type TableConstructor func(*ScrapedData) ([]int, []string)
+
+func ScrapeData(method TableConstructor) ScrapedData {
+	data := ScrapedData{
+		Rows:     make([][]string, 0),
+		Columns:  ColumnData{},
+		Links:    make([]string, 0),
+		Metadata: make(map[string]string),
+		Image:    nil,
+	}
+
+	colWidths, colTitles := method(&data)
+	data.Columns = createColumns(colWidths, colTitles, data.Rows)
+	return data
 }
 
 func computeColumnWidth(maxWidth []int, colTitles []string, rows [][]string) []int {
@@ -38,4 +63,19 @@ func computeColumnWidth(maxWidth []int, colTitles []string, rows [][]string) []i
 		}
 	}
 	return widths
+}
+
+func createColumns(widths []int, titles []string, rows [][]string) ColumnData {
+	return ColumnData{
+		Title: titles[:],
+		Width: computeColumnWidth(widths, titles, rows),
+	}
+}
+
+func SetLink(s interface{}, link string) {
+	stype := reflect.ValueOf(s).Elem()
+	tmp := reflect.New(stype.Elem().Type()).Elem()
+	tmp.Set(stype.Elem())
+	tmp.FieldByName("Link").SetString(link)
+	stype.Set(tmp)
 }
