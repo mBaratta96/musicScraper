@@ -1,4 +1,4 @@
-# musicScrapper
+# musicScraper
 
 CLI tool for scraping information from musical website (Rateyourmusic, Metal
 Archives), with nice album ASCII art.
@@ -10,7 +10,7 @@ To list your RYM album rating, download your profile data and save it in the
 
 ```shell
 
-musicScrapper [OPTIONS] "name_of_artist"
+musicScraper [OPTIONS] "name_of_artist"
 
 -credits
         Display RYM credits
