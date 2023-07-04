@@ -34,8 +34,8 @@ func app(s scraper.Scraper) {
 		s.SetLink(data.Links[index])
 		albumData := scraper.ScrapeData(s.GetAlbum)
 		cli.CallClear()
-		if data.Image != nil {
-			cli.PrintImage(data.Image)
+		if albumData.Image != nil {
+			cli.PrintImage(albumData.Image)
 		}
 		cli.PrintMetadata(albumData.Metadata, s.GetStyleColor())
 		cli.PrintLink(data.Links[index])
