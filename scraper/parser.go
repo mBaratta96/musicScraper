@@ -20,6 +20,9 @@ type RYMRatingSlice struct {
 }
 
 func ReadRYMRatings(path string) RYMRatingSlice {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return RYMRatingSlice{}
+	}
 	ratingsFile, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		fmt.Println("Error in leading ratings: ", err)

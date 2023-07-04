@@ -40,6 +40,9 @@ type AlbumTable struct {
 }
 
 func getVote(divId string, ratings RYMRatingSlice) string {
+	if len(ratings.Ids) == 0 || len(ratings.Ratings) == 0 {
+		return ""
+	}
 	splitted := strings.Split(divId, "_")
 	isListened := false
 	var vote int
@@ -176,11 +179,13 @@ func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
 		}
 	})
 	c.OnHTML("div.album_title > input.album_shortcut", func(h *colly.HTMLElement) {
-		albumId := h.Attr("value")
-		if id, err := strconv.Atoi(albumId[6 : len(albumId)-1]); err == nil {
-			if slices.Contains(r.Ratings.Ids, id) {
-				vote := r.Ratings.Ratings[slices.Index(r.Ratings.Ids, id)]
-				data.Metadata["Vote"] = fmt.Sprintf("%.1f", float32(vote)/2)
+		if len(r.Ratings.Ids) > 0 && len(r.Ratings.Ratings) > 0 {
+			albumId := h.Attr("value")
+			if id, err := strconv.Atoi(albumId[6 : len(albumId)-1]); err == nil {
+				if slices.Contains(r.Ratings.Ids, id) {
+					vote := r.Ratings.Ratings[slices.Index(r.Ratings.Ids, id)]
+					data.Metadata["Vote"] = fmt.Sprintf("%.1f", float32(vote)/2)
+				}
 			}
 		}
 	})
