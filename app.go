@@ -44,7 +44,7 @@ func app(s scraper.Scraper) {
 }
 
 func main() {
-	website := flag.String("website", "", "Desired Website")
+	website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
 	rymCredits := flag.Bool("credits", false, "Display RYM credits")
 
 	flag.Parse()
