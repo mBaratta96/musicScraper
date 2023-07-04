@@ -5,6 +5,9 @@ Archives), with nice album ASCII art.
 
 ## Usage
 
+**RateYourMusic account is mandatory** (so far). Download your profile data and
+save it in the `.config/musicScrapper` folder as `user_albums_export.csv`.
+
 ```shell
 
 musicScrapper [OPTIONS] "name_of_artist"
