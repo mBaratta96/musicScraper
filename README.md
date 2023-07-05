@@ -5,6 +5,8 @@ Archives), with nice album ASCII art.
 
 ## Usage
 
+So far, you have to build it by yourself. Clone the repo, then `cd musicScraper` and `go build`
+
 To list your RYM album rating, download your profile data and save it in the
 `.config/musicScrapper` folder as `user_albums_export.csv`.
 
