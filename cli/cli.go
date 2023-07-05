@@ -41,13 +41,13 @@ func PrintRows(rowsString [][]string, columnsString []string, widths []int) int 
 		Bold(false)
 	t.SetStyles(s)
 
-	p := tea.NewProgram(model{t, false})
+	p := tea.NewProgram(tableModel{t, false})
 	m, err := p.Run()
 	if err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
-	if m, ok := m.(model); ok {
+	if m, ok := m.(tableModel); ok {
 		if !m.exit {
 			return m.table.Cursor()
 		}
@@ -108,4 +108,8 @@ func PrintMetadata(metadata map[string]string, color string) {
 			fmt.Println(style.Render(key)+strings.Repeat(" ", max_key_length-len(key)), value)
 		}
 	}
+}
+
+func PrintList() {
+	createList()
 }

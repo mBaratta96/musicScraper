@@ -13,7 +13,7 @@ import (
 	"golang.org/x/term"
 )
 
-type model struct {
+type tableModel struct {
 	table table.Model
 	exit  bool
 }
@@ -44,9 +44,9 @@ func CallClear() {
 	}
 }
 
-func (m model) Init() tea.Cmd { return nil }
+func (m tableModel) Init() tea.Cmd { return nil }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m tableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -69,7 +69,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) View() string {
+func (m tableModel) View() string {
 	return baseStyle.Render(m.table.View()) + "\n"
 }
 
