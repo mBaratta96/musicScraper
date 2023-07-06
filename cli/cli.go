@@ -5,6 +5,7 @@ import (
 	"image"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -112,4 +113,22 @@ func PrintMetadata(metadata map[string]string, color string) {
 
 func PrintList() {
 	createList()
+}
+
+func PrintReview(review string) {
+	words := strings.FieldsFunc(review, func(r rune) bool {
+		return unicode.IsSpace(r) && r != '\n'
+	})
+	screenWidth, _, _ := term.GetSize(int(os.Stdout.Fd()))
+	totalTextLength := 0
+	for _, word := range words {
+		if len(word)+totalTextLength < screenWidth {
+			fmt.Print(word + " ")
+			totalTextLength += len(word) + 1
+		} else {
+			fmt.Print("\n" + word + " ")
+			totalTextLength = len(word) + 1
+		}
+	}
+	fmt.Print("\n")
 }

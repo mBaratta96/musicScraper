@@ -76,5 +76,5 @@ func main() {
 	data := scraper.ScrapeData(rym.GetReviewsList)
 
 	index := cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
-	fmt.Println(data.Links[index])
+	cli.PrintReview(data.Links[index])
 }
