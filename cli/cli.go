@@ -122,12 +122,17 @@ func PrintReview(review string) {
 	screenWidth, _, _ := term.GetSize(int(os.Stdout.Fd()))
 	totalTextLength := 0
 	for _, word := range words {
-		if len(word)+totalTextLength < screenWidth {
-			fmt.Print(word + " ")
-			totalTextLength += len(word) + 1
-		} else {
-			fmt.Print("\n" + word + " ")
+		switch {
+		case strings.Contains(word, "\n"): // if it's word + \n + word
+			fmt.Printf("%s ", word)
+			totalTextLength = len(strings.Split(word, "\n")[1])
+		case len(word)+1+totalTextLength > screenWidth:
+			fmt.Printf("\n%s ", word)
 			totalTextLength = len(word) + 1
+		default:
+			fmt.Printf("%s ", word)
+			totalTextLength += len(word) + 1
+
 		}
 	}
 	fmt.Print("\n")
