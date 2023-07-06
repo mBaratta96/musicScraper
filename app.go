@@ -71,5 +71,7 @@ func main() {
 	// 		Ratings: scraper.ReadRYMRatings(configFilePath),
 	// 	})
 	// }
-	cli.PrintList()
+	link := "https://www.metal-archives.com/albums/Nokturnal_Mortum/Goat_Horns/1646"
+	metallum := &scraper.Metallum{Link: link}
+	metallum.GetReviews()
 }

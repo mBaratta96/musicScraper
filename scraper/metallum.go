@@ -154,3 +154,17 @@ func (m *Metallum) GetStyleColor() string {
 func (m *Metallum) SetLink(link string) {
 	m.Link = link
 }
+
+func (m *Metallum) GetReviews() {
+	c := colly.NewCollector()
+
+	c.OnHTML("div#album_tabs_reviews tr.even, div#album_tabs_reviews tr.odd", func(h *colly.HTMLElement) {
+		var row [4]string
+		h.ForEach("td:not([nowrap])", func(i int, h *colly.HTMLElement) {
+			row[i] = h.Text
+		})
+		fmt.Println(row)
+	})
+
+	c.Visit(m.Link)
+}
