@@ -31,8 +31,8 @@ var (
 	mAlbumlistColumnWidths = [4]int{64, 16, 4, 8}
 	mAlbumColumnTitles     = [4]string{"N.", "Title", "Duration", "Lyric"}
 	mAlbumColumnWidths     = [4]int{4, 64, 8, 16}
-	mAlbumReviewTitles     = [4]string{"Title", "Rating", "User", "Date"}
-	mAlbumReviewWidths     = [4]int{32, 7, 32, 32}
+	mReviewColumnTitles    = [4]string{"Title", "Rating", "User", "Date"}
+	mReviewColumnWidths    = [4]int{32, 7, 32, 32}
 )
 
 type Metallum struct {
@@ -177,5 +177,5 @@ func (m *Metallum) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.Visit(m.Link)
-	return mAlbumReviewWidths[:], mAlbumReviewTitles[:]
+	return mReviewColumnWidths[:], mReviewColumnTitles[:]
 }

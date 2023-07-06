@@ -26,6 +26,8 @@ var (
 	rAlbumlistColumnWidths = [8]int{4, 64, 4, 7, 7, 7, 12, 5}
 	rAlbumColumnTitles     = [3]string{"N.", "Title", "Duration"}
 	rAlbumColumnWidths     = [3]int{4, 64, 8}
+	rReviewColumnTitles    = [3]string{"User", "Date", "Rating"}
+	rReviewColumnWidths    = [3]int{64, 16, 7}
 )
 
 type RateYourMusic struct {
@@ -214,4 +216,27 @@ func (r *RateYourMusic) GetStyleColor() string {
 
 func (r *RateYourMusic) SetLink(link string) {
 	r.Link = link
+}
+
+func (r *RateYourMusic) GetReviewsList(data *ScrapedData) ([]int, []string) {
+	c := colly.NewCollector()
+
+	c.OnHTML("span.navspan a.navlinknext", func(h *colly.HTMLElement) {
+		h.Request.Visit(h.Attr("href"))
+	})
+
+	c.OnHTML("div.review > div.review_header ", func(h *colly.HTMLElement) {
+		var row [3]string
+		row[0] = h.ChildText("span.review_user")
+		row[1] = h.ChildText("span.review_date")
+		row[2] = strings.Split(h.ChildAttr("span.review_rating > img", "alt"), " ")[0]
+		data.Rows = append(data.Rows, row[:])
+	})
+
+	c.OnHTML("div.review > div.review_body ", func(h *colly.HTMLElement) {
+		data.Links = append(data.Links, h.ChildText("span.rendered_text"))
+	})
+
+	c.Visit(r.Link + "reviews/1")
+	return rReviewColumnWidths[:], rReviewColumnTitles[:]
 }

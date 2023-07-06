@@ -5,7 +5,7 @@ import (
 	//"flag"
 	"fmt"
 	"os"
-	////"path/filepath"
+	"path/filepath"
 	"scraper"
 )
 
@@ -56,12 +56,12 @@ func main() {
 	// 	os.Exit(1)
 	// }
 	// search := flag.Arg(0)
-	// configFolder, err := os.UserConfigDir()
-	// if err != nil {
-	// 	fmt.Println("Cannot determine config folder")
-	// 	os.Exit(1)
-	// }
-	// configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
+	configFolder, err := os.UserConfigDir()
+	if err != nil {
+		fmt.Println("Cannot determine config folder")
+		os.Exit(1)
+	}
+	configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
 	// if *website == "metallum" {
 	// 	app(&scraper.Metallum{Link: search})
 	// } else {
@@ -71,9 +71,9 @@ func main() {
 	// 		Ratings: scraper.ReadRYMRatings(configFilePath),
 	// 	})
 	// }
-	link := "https://www.metal-archives.com/albums/Nokturnal_Mortum/Goat_Horns/1646"
-	metallum := &scraper.Metallum{Link: link}
-	data := scraper.ScrapeData(metallum.GetReviewsList)
+	link := "https://rateyourmusic.com/release/album/roland-kirk/i-talk-with-the-spirits/"
+	rym := &scraper.RateYourMusic{Link: link, Credits: false, Ratings: scraper.ReadRYMRatings(configFilePath)}
+	data := scraper.ScrapeData(rym.GetReviewsList)
 
 	index := cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
 	fmt.Println(data.Links[index])
