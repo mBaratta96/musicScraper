@@ -73,5 +73,8 @@ func main() {
 	// }
 	link := "https://www.metal-archives.com/albums/Nokturnal_Mortum/Goat_Horns/1646"
 	metallum := &scraper.Metallum{Link: link}
-	metallum.GetReviews()
+	data := scraper.ScrapeData(metallum.GetReviewsList)
+
+	index := cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
+	fmt.Println(data.Links[index])
 }

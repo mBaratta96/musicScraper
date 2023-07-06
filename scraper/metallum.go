@@ -31,6 +31,8 @@ var (
 	mAlbumlistColumnWidths = [4]int{64, 16, 4, 8}
 	mAlbumColumnTitles     = [4]string{"N.", "Title", "Duration", "Lyric"}
 	mAlbumColumnWidths     = [4]int{4, 64, 8, 16}
+	mAlbumReviewTitles     = [4]string{"Title", "Rating", "User", "Date"}
+	mAlbumReviewWidths     = [4]int{32, 7, 32, 32}
 )
 
 type Metallum struct {
@@ -77,7 +79,7 @@ func (m *Metallum) FindBand(data *ScrapedData) ([]int, []string) {
 					row[2] = node
 				}
 			}
-			data.Rows = append(data.Rows, []string{row[0], row[1], row[2]})
+			data.Rows = append(data.Rows, row[:])
 		}
 	})
 	c.OnScraped(func(_ *colly.Response) {
@@ -103,7 +105,7 @@ func (m *Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 				data.Links = append(data.Links, h.Attr("href"))
 			}
 		})
-		data.Rows = append(data.Rows, []string{row[0], row[1], row[2], row[3]})
+		data.Rows = append(data.Rows, row[:])
 	})
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
 		getMetadata(h, data.Metadata)
@@ -121,7 +123,7 @@ func (m *Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
 		h.ForEach("td", func(i int, h *colly.HTMLElement) {
 			row[i] = h.Text
 		})
-		data.Rows = append(data.Rows, []string{row[0], row[1], row[2], row[3]})
+		data.Rows = append(data.Rows, row[:])
 	})
 
 	c.OnHTML("a#cover.image", func(h *colly.HTMLElement) {
@@ -155,16 +157,25 @@ func (m *Metallum) SetLink(link string) {
 	m.Link = link
 }
 
-func (m *Metallum) GetReviews() {
+func (m *Metallum) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 
 	c.OnHTML("div#album_tabs_reviews tr.even, div#album_tabs_reviews tr.odd", func(h *colly.HTMLElement) {
 		var row [4]string
-		h.ForEach("td:not([nowrap])", func(i int, h *colly.HTMLElement) {
-			row[i] = h.Text
+		var link string
+		i := 0
+		h.ForEach("td", func(_ int, h *colly.HTMLElement) {
+			if len(h.Attr("nowrap")) == 0 {
+				row[i] = h.Text
+				i += 1
+			} else {
+				link = h.ChildAttrs("a", "href")[0]
+			}
 		})
-		fmt.Println(row)
+		data.Rows = append(data.Rows, row[:])
+		data.Links = append(data.Links, link)
 	})
 
 	c.Visit(m.Link)
+	return mAlbumReviewWidths[:], mAlbumReviewTitles[:]
 }

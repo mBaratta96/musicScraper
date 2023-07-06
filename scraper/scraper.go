@@ -21,6 +21,7 @@ type Scraper interface {
 	FindBand(*ScrapedData) ([]int, []string)
 	GetAlbumList(*ScrapedData) ([]int, []string)
 	GetAlbum(*ScrapedData) ([]int, []string)
+	GetReviewsList(*ScrapedData) ([]int, []string)
 	GetStyleColor() string
 	SetLink(string)
 }
