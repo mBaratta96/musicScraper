@@ -177,9 +177,9 @@ func (m *Metallum) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.OnHTML("div.reviewBox", func(h *colly.HTMLElement) {
-		review := strings.TrimSpace(h.ChildText("h3.reviewTitle")) + "\n"
-		review += strings.TrimSpace(h.ChildText("div:not([attr_all])")) + "\n"
-		review += strings.TrimSpace(h.ChildText("div.reviewContent"))
+		review := h.ChildText("h3.reviewTitle") + "\n"
+		review += h.ChildText("div:not([attr_all])") + "\n"
+		review += h.ChildText("div.reviewContent")
 		data.Links = append(data.Links, review)
 	})
 

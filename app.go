@@ -2,10 +2,10 @@ package main
 
 import (
 	"cli"
-	//"flag"
+	"flag"
 	"fmt"
 	"os"
-	////"path/filepath"
+	"path/filepath"
 	"scraper"
 )
 
@@ -44,37 +44,37 @@ func app(s scraper.Scraper) {
 }
 
 func main() {
-	// website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
-	// rymCredits := flag.Bool("credits", false, "Display RYM credits")
-	//
-	// flag.Parse()
-	// if len(flag.Args()) == 0 {
-	// 	os.Exit(1)
-	// }
-	// if !(*website == "metallum" || *website == "rym") {
-	// 	fmt.Println("Wrong website")
-	// 	os.Exit(1)
-	// }
-	// search := flag.Arg(0)
-	// configFolder, err := os.UserConfigDir()
-	// if err != nil {
-	// 	fmt.Println("Cannot determine config folder")
-	// 	os.Exit(1)
-	// }
-	// configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
-	// if *website == "metallum" {
-	// 	app(&scraper.Metallum{Link: search})
-	// } else {
-	// 	app(&scraper.RateYourMusic{
-	// 		Link:    search,
-	// 		Credits: *rymCredits,
-	// 		Ratings: scraper.ReadRYMRatings(configFilePath),
-	// 	})
-	// }
-	link := "https://www.metal-archives.com/albums/Nokturnal_Mortum/Goat_Horns/1646"
-	metallum := &scraper.Metallum{Link: link}
-	data := scraper.ScrapeData(metallum.GetReviewsList)
+	website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
+	rymCredits := flag.Bool("credits", false, "Display RYM credits")
 
-	index := cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
-	cli.PrintReview(data.Links[index])
+	flag.Parse()
+	if len(flag.Args()) == 0 {
+		os.Exit(1)
+	}
+	if !(*website == "metallum" || *website == "rym") {
+		fmt.Println("Wrong website")
+		os.Exit(1)
+	}
+	search := flag.Arg(0)
+	configFolder, err := os.UserConfigDir()
+	if err != nil {
+		fmt.Println("Cannot determine config folder")
+		os.Exit(1)
+	}
+	configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
+	if *website == "metallum" {
+		app(&scraper.Metallum{Link: search})
+	} else {
+		app(&scraper.RateYourMusic{
+			Link:    search,
+			Credits: *rymCredits,
+			Ratings: scraper.ReadRYMRatings(configFilePath),
+		})
+	}
+	// link := "https://www.metal-archives.com/albums/Nokturnal_Mortum/Goat_Horns/1646"
+	// metallum := &scraper.Metallum{Link: link}
+	// data := scraper.ScrapeData(metallum.GetReviewsList)
+	//
+	// index := cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
+	// cli.PrintReview(data.Links[index])
 }

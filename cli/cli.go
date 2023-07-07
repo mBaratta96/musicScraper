@@ -74,39 +74,32 @@ func PrintMetadata(metadata map[string]string, color string) {
 	if e != nil {
 		panic(e)
 	}
-	max_key_length := 0
+	maxKeyLength := 0
 	for k := range metadata {
-		if len(k) > max_key_length {
-			max_key_length = len(k)
+		if len(k) > maxKeyLength {
+			maxKeyLength = len(k)
 		}
 	}
-	max_key_length += 4
+	maxKeyLength += 4
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
-	value_space := w - (max_key_length + 1)
+	valueSpace := w - maxKeyLength
 	for key, value := range metadata {
-		key = strings.TrimSpace(key)
-		value = strings.TrimSpace(value)
-		if len(value) > value_space {
-			var value2 string
-			firstI := 0
-			lastI := value_space
-			part := lastI
-			spacingS := strings.Repeat(" ", max_key_length-len(key))
-			spacing := spacingS
-
-			for i := 0; i < len(value); i += part {
-				value2 += spacingS + value[firstI:lastI] + "\n" + spacing
-				spacingS = strings.Repeat(" ", len(key)+1)
-				if ((len(value) - lastI) < part) || ((len(value) - lastI) == part) {
-					break
+		if len(value) > valueSpace {
+			fmt.Printf("%s%s", style.Render(key), strings.Repeat(" ", maxKeyLength-len(key)))
+			words := strings.Fields(value)
+			totalTextLength := 0
+			spacing := strings.Repeat(" ", maxKeyLength)
+			for _, word := range words {
+				if len(word)+1+totalTextLength > valueSpace {
+					fmt.Printf("\n%s", spacing)
+					totalTextLength = 0
 				}
-				firstI = lastI
-				lastI += part
+				fmt.Printf("%s ", word)
+				totalTextLength += len(word) + 1
 			}
-			value2 += spacingS + value[lastI:]
-			fmt.Println(style.Render(key), value2)
+			fmt.Print("\n")
 		} else {
-			fmt.Println(style.Render(key)+strings.Repeat(" ", max_key_length-len(key)), value)
+			fmt.Println(style.Render(key) + strings.Repeat(" ", maxKeyLength-len(key)) + value)
 		}
 	}
 }
@@ -125,7 +118,7 @@ func PrintReview(review string) {
 		switch {
 		case strings.Contains(word, "\n"): // if it's word + \n + word
 			fmt.Printf("%s ", word)
-			totalTextLength = len(strings.Split(word, "\n")[1])
+			totalTextLength = len(strings.Split(word, "\n")[1]) + 1
 		case len(word)+1+totalTextLength > screenWidth:
 			fmt.Printf("\n%s ", word)
 			totalTextLength = len(word) + 1

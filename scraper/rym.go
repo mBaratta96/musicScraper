@@ -80,7 +80,7 @@ func getAlbumListDiscography(
 		c.OnHTML(
 			"div#column_container_right div.section_artist_biography > span.rendered_text",
 			func(h *colly.HTMLElement) {
-				data.Metadata["Biography"] = strings.ReplaceAll(h.Text, "\n", " ")
+				data.Metadata["Biography"] = h.Text
 			})
 	}
 
