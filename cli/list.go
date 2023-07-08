@@ -94,7 +94,7 @@ func (m listModel) View() string {
 var choiceMap = map[string]int{
 	"Show credits": 0,
 	"Show reviews": 1,
-	"Go Back":      2,
+	"Go back":      2,
 }
 
 func PrintList() int {

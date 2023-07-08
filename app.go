@@ -36,25 +36,30 @@ func app(s scraper.Scraper) {
 		s.SetLink(data.Links[index])
 		albumData := scraper.ScrapeData(s.GetAlbum)
 		cli.CallClear()
+		if albumData.Image != nil {
+			cli.PrintImage(albumData.Image)
+		}
+		cli.PrintMetadata(albumData.Metadata, s.GetStyleColor())
+		cli.PrintLink(data.Links[index])
+		index = checkIndex(cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
+		listIndex := checkIndex(cli.PrintList())
+		if listIndex == 2 {
+			continue
+		}
 		for true {
-			if albumData.Image != nil {
-				cli.PrintImage(albumData.Image)
-			}
-			cli.PrintMetadata(albumData.Metadata, s.GetStyleColor())
-			cli.PrintLink(data.Links[index])
-			index = checkIndex(cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
-			index = checkIndex(cli.PrintList())
-			switch index {
-			case 0:
+			if listIndex == 0 {
 				creditsData := scraper.ScrapeData(s.GetCredits)
 				cli.PrintMetadata(creditsData.Metadata, s.GetStyleColor())
-			case 1:
+			}
+			if listIndex == 1 {
 				reviewData := scraper.ScrapeData(s.GetReviewsList)
 				reviewIndex := checkIndex(
 					cli.PrintRows(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
 				)
 				cli.PrintReview(reviewData.Links[reviewIndex])
-			default:
+			}
+			listIndex = checkIndex(cli.PrintList())
+			if listIndex == 2 {
 				break
 			}
 		}
