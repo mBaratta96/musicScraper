@@ -94,10 +94,4 @@ func main() {
 			Ratings: scraper.ReadRYMRatings(configFilePath),
 		})
 	}
-	// link := "https://rateyourmusic.com/release/album/rahsaan-roland-kirk/prepare-thyself-to-deal-with-a-miracle/"
-	// rym := &scraper.RateYourMusic{Link: link, Credits: false, Ratings: scraper.ReadRYMRatings(configFilePath)}
-	// data := scraper.ScrapeData(rym.GetCredits)
-	//
-	// // index := cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
-	// cli.PrintMetadata(data.Metadata, rym.GetStyleColor())
 }
