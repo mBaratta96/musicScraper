@@ -10,6 +10,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
 	"golang.org/x/exp/slices"
 )
@@ -239,4 +240,28 @@ func (r *RateYourMusic) GetReviewsList(data *ScrapedData) ([]int, []string) {
 
 	c.Visit(r.Link + "reviews/1")
 	return rReviewColumnWidths[:], rReviewColumnTitles[:]
+}
+
+func (r *RateYourMusic) GetCredits(data *ScrapedData) ([]int, []string) {
+	c := colly.NewCollector()
+
+	c.OnHTML("div.section_credits > ul.credits", func(h *colly.HTMLElement) {
+		h.ForEach("li[class!='expand_button']:not([style='display:none;'])", func(_ int, h *colly.HTMLElement) {
+			artist := h.ChildText("a.artist")
+			if len(artist) == 0 {
+				artist = h.ChildText("span:not([class])")
+			}
+			credit := []string{}
+			h.ForEach("span.role_name ", func(i int, h *colly.HTMLElement) {
+				h.DOM.Contents().Not("span.role_tracks").Each(func(_ int, s *goquery.Selection) {
+					credit = append(credit, strings.ToUpper(s.Text()[:1])+s.Text()[1:])
+				})
+			})
+			data.Metadata[artist] = strings.Join(credit, ", ")
+		})
+	})
+
+	c.Visit(r.Link)
+
+	return []int{}, []string{}
 }

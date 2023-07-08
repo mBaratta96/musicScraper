@@ -5,7 +5,7 @@ import (
 	//"flag"
 	"fmt"
 	"os"
-	//"path/filepath"
+	"path/filepath"
 	"scraper"
 )
 
@@ -56,12 +56,12 @@ func main() {
 	// 	os.Exit(1)
 	// }
 	// search := flag.Arg(0)
-	// configFolder, err := os.UserConfigDir()
-	// if err != nil {
-	// 	fmt.Println("Cannot determine config folder")
-	// 	os.Exit(1)
-	// }
-	// configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
+	configFolder, err := os.UserConfigDir()
+	if err != nil {
+		fmt.Println("Cannot determine config folder")
+		os.Exit(1)
+	}
+	configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
 	// if *website == "metallum" {
 	// 	app(&scraper.Metallum{Link: search})
 	// } else {
@@ -71,10 +71,10 @@ func main() {
 	// 		Ratings: scraper.ReadRYMRatings(configFilePath),
 	// 	})
 	// }
-	link := "https://www.metal-archives.com/albums/Nokturnal_Mortum/Goat_Horns/1646"
-	metallum := &scraper.Metallum{Link: link}
-	data := scraper.ScrapeData(metallum.GetCredits)
+	link := "https://rateyourmusic.com/release/album/rahsaan-roland-kirk/prepare-thyself-to-deal-with-a-miracle/"
+	rym := &scraper.RateYourMusic{Link: link, Credits: false, Ratings: scraper.ReadRYMRatings(configFilePath)}
+	data := scraper.ScrapeData(rym.GetCredits)
 
 	// index := cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
-	cli.PrintMetadata(data.Metadata, metallum.GetStyleColor())
+	cli.PrintMetadata(data.Metadata, rym.GetStyleColor())
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -69,6 +70,7 @@ func PrintLink(link string) {
 	fmt.Println("\n" + link + "\n")
 }
 
+// use utf8 for non-English alphabets
 func PrintMetadata(metadata map[string]string, color string) {
 	w, _, e := term.GetSize(0)
 	if e != nil {
@@ -76,8 +78,8 @@ func PrintMetadata(metadata map[string]string, color string) {
 	}
 	maxKeyLength := 0
 	for k := range metadata {
-		if len(k) > maxKeyLength {
-			maxKeyLength = len(k)
+		if utf8.RuneCountInString(k) > maxKeyLength {
+			maxKeyLength = utf8.RuneCountInString(k)
 		}
 	}
 	maxKeyLength += 4
@@ -85,7 +87,7 @@ func PrintMetadata(metadata map[string]string, color string) {
 	valueSpace := w - maxKeyLength
 	for key, value := range metadata {
 		if len(value) > valueSpace {
-			fmt.Printf("%s%s", style.Render(key), strings.Repeat(" ", maxKeyLength-len(key)))
+			fmt.Printf("%s%s", style.Render(key), strings.Repeat(" ", maxKeyLength-utf8.RuneCountInString(key)))
 			words := strings.Fields(value)
 			totalTextLength := 0
 			spacing := strings.Repeat(" ", maxKeyLength)
@@ -99,7 +101,7 @@ func PrintMetadata(metadata map[string]string, color string) {
 			}
 			fmt.Print("\n")
 		} else {
-			fmt.Println(style.Render(key) + strings.Repeat(" ", maxKeyLength-len(key)) + value)
+			fmt.Println(style.Render(key) + strings.Repeat(" ", maxKeyLength-utf8.RuneCountInString(key)) + value)
 		}
 	}
 }
