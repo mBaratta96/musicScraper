@@ -2,12 +2,19 @@ package main
 
 import (
 	"cli"
-	//"flag"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"scraper"
 )
+
+func checkIndex(index int) int {
+	if index == -1 {
+		os.Exit(1)
+	}
+	return index
+}
 
 func app(s scraper.Scraper) {
 	data := scraper.ScrapeData(s.FindBand)
@@ -15,66 +22,77 @@ func app(s scraper.Scraper) {
 		fmt.Println("No result for your search")
 		os.Exit(0)
 	}
-	index := 0
+	index := -1
 	if len(data.Links) > 1 {
 		index = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
 	}
-	if index == -1 {
-		os.Exit(1)
-	}
+	index = checkIndex(index)
 	s.SetLink(data.Links[index])
 	data = scraper.ScrapeData(s.GetAlbumList)
 	for true {
 		cli.CallClear()
 		cli.PrintMetadata(data.Metadata, s.GetStyleColor())
-		index = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
-		if index == -1 {
-			break
-		}
+		index = checkIndex(cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width))
 		s.SetLink(data.Links[index])
 		albumData := scraper.ScrapeData(s.GetAlbum)
 		cli.CallClear()
-		if albumData.Image != nil {
-			cli.PrintImage(albumData.Image)
+		for true {
+			if albumData.Image != nil {
+				cli.PrintImage(albumData.Image)
+			}
+			cli.PrintMetadata(albumData.Metadata, s.GetStyleColor())
+			cli.PrintLink(data.Links[index])
+			index = checkIndex(cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
+			index = checkIndex(cli.PrintList())
+			switch index {
+			case 0:
+				creditsData := scraper.ScrapeData(s.GetCredits)
+				cli.PrintMetadata(creditsData.Metadata, s.GetStyleColor())
+			case 1:
+				reviewData := scraper.ScrapeData(s.GetReviewsList)
+				reviewIndex := checkIndex(
+					cli.PrintRows(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
+				)
+				cli.PrintReview(reviewData.Links[reviewIndex])
+			default:
+				break
+			}
 		}
-		cli.PrintMetadata(albumData.Metadata, s.GetStyleColor())
-		cli.PrintLink(data.Links[index])
-		_ = cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width)
 	}
 }
 
 func main() {
-	// website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
-	// rymCredits := flag.Bool("credits", false, "Display RYM credits")
-	//
-	// flag.Parse()
-	// if len(flag.Args()) == 0 {
-	// 	os.Exit(1)
-	// }
-	// if !(*website == "metallum" || *website == "rym") {
-	// 	fmt.Println("Wrong website")
-	// 	os.Exit(1)
-	// }
-	// search := flag.Arg(0)
+	website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
+	rymCredits := flag.Bool("credits", false, "Display RYM credits")
+
+	flag.Parse()
+	if len(flag.Args()) == 0 {
+		os.Exit(1)
+	}
+	if !(*website == "metallum" || *website == "rym") {
+		fmt.Println("Wrong website")
+		os.Exit(1)
+	}
+	search := flag.Arg(0)
 	configFolder, err := os.UserConfigDir()
 	if err != nil {
 		fmt.Println("Cannot determine config folder")
 		os.Exit(1)
 	}
 	configFilePath := filepath.Join(configFolder, "musicScrapper", "user_albums_export.csv")
-	// if *website == "metallum" {
-	// 	app(&scraper.Metallum{Link: search})
-	// } else {
-	// 	app(&scraper.RateYourMusic{
-	// 		Link:    search,
-	// 		Credits: *rymCredits,
-	// 		Ratings: scraper.ReadRYMRatings(configFilePath),
-	// 	})
-	// }
-	link := "https://rateyourmusic.com/release/album/rahsaan-roland-kirk/prepare-thyself-to-deal-with-a-miracle/"
-	rym := &scraper.RateYourMusic{Link: link, Credits: false, Ratings: scraper.ReadRYMRatings(configFilePath)}
-	data := scraper.ScrapeData(rym.GetCredits)
-
-	// index := cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
-	cli.PrintMetadata(data.Metadata, rym.GetStyleColor())
+	if *website == "metallum" {
+		app(&scraper.Metallum{Link: search})
+	} else {
+		app(&scraper.RateYourMusic{
+			Link:    search,
+			Credits: *rymCredits,
+			Ratings: scraper.ReadRYMRatings(configFilePath),
+		})
+	}
+	// link := "https://rateyourmusic.com/release/album/rahsaan-roland-kirk/prepare-thyself-to-deal-with-a-miracle/"
+	// rym := &scraper.RateYourMusic{Link: link, Credits: false, Ratings: scraper.ReadRYMRatings(configFilePath)}
+	// data := scraper.ScrapeData(rym.GetCredits)
+	//
+	// // index := cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
+	// cli.PrintMetadata(data.Metadata, rym.GetStyleColor())
 }

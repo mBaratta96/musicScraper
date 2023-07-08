@@ -1,10 +1,9 @@
 package cli
 
 import (
+	"fmt"
 	"math"
 	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/table"
@@ -21,28 +20,6 @@ type tableModel struct {
 var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
 	BorderForeground(lipgloss.Color("240"))
-
-func CallClear() {
-	clear := make(map[string]func())
-	clear["linux"] = func() {
-		cmd := exec.Command("clear")
-		cmd.Stdout = os.Stdout
-		if err := cmd.Run(); err != nil {
-			panic("Error in Linux clear terminal")
-		}
-	}
-	clear["windows"] = func() {
-		cmd := exec.Command("cmd", "/c", "cls")
-		cmd.Stdout = os.Stdout
-		if err := cmd.Run(); err != nil {
-			panic("Error in Windows clear terminal")
-		}
-	}
-	value, ok := clear[runtime.GOOS]
-	if ok {
-		value()
-	}
-}
 
 func (m tableModel) Init() tea.Cmd { return nil }
 
@@ -102,4 +79,49 @@ func createRows(rowsString [][]string) []table.Row {
 		rows = append(rows, row)
 	}
 	return rows
+}
+
+func PrintRows(rowsString [][]string, columnsString []string, widths []int) int {
+	columns := createColumns(columnsString, widths)
+	rows := createRows(rowsString)
+	_, screenHeigth, _ := term.GetSize(int(os.Stdout.Fd()))
+	var height int
+	if screenHeigth/2 < len(rows) {
+		height = screenHeigth / 2
+	} else {
+		height = len(rows)
+	}
+	t := table.New(
+		table.WithColumns(columns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(height),
+	)
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(false)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(false)
+	t.SetStyles(s)
+
+	p := tea.NewProgram(tableModel{t, false})
+	m, err := p.Run()
+	if err != nil {
+		fmt.Println("Error running program:", err)
+		os.Exit(1)
+	}
+	if m, ok := m.(tableModel); ok {
+		if !m.exit {
+			return m.table.Cursor()
+		}
+	} else {
+		fmt.Println("Error in table")
+		os.Exit(1)
+	}
+	return -1
 }

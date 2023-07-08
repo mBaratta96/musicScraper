@@ -86,42 +86,44 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m listModel) View() string {
 	if m.choice != "" {
-		return quitTextStyle.Render(fmt.Sprintf("%s? Sounds good to me.", m.choice))
-	}
-	if m.quitting {
-		return quitTextStyle.Render("Not hungry? That’s cool.")
+		return m.choice
 	}
 	return "\n" + m.list.View()
 }
 
-func createList() {
-	items := []list.Item{
-		item("Ramen"),
-		item("Tomato Soup"),
-		item("Hamburgers"),
-		item("Cheeseburgers"),
-		item("Currywurst"),
-		item("Okonomiyaki"),
-		item("Pasta"),
-		item("Fillet Mignon"),
-		item("Caviar"),
-		item("Just Wine"),
-	}
+var choiceMap = map[string]int{
+	"Show credits": 0,
+	"Show reviews": 1,
+	"Go Back":      2,
+}
+
+func PrintList() int {
+	items := []list.Item{item("Show credits"), item("Show reviews"), item("Go back")}
 
 	const defaultWidth = 20
 
 	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
-	l.Title = "What do you want for dinner?"
+	l.Title = "Select operation:"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = titleStyle
 	l.Styles.PaginationStyle = paginationStyle
 	l.SetShowHelp(false)
 
-	m := listModel{list: l}
-
-	if _, err := tea.NewProgram(m).Run(); err != nil {
+	p := tea.NewProgram(listModel{list: l})
+	m, err := p.Run()
+	if err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
+	if m, ok := m.(listModel); ok {
+		if !m.quitting {
+			return choiceMap[m.choice]
+		}
+	} else {
+		fmt.Println("Error in table")
+		os.Exit(1)
+	}
+
+	return -1
 }

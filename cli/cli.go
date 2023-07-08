@@ -4,60 +4,37 @@ import (
 	"fmt"
 	"image"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/charmbracelet/bubbles/table"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/qeesung/image2ascii/convert"
 	"golang.org/x/term"
 )
 
-func PrintRows(rowsString [][]string, columnsString []string, widths []int) int {
-	columns := createColumns(columnsString, widths)
-	rows := createRows(rowsString)
-	_, screenHeigth, _ := term.GetSize(int(os.Stdout.Fd()))
-	var height int
-	if screenHeigth/2 < len(rows) {
-		height = screenHeigth / 2
-	} else {
-		height = len(rows)
-	}
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(height),
-	)
-	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(false)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-	t.SetStyles(s)
-
-	p := tea.NewProgram(tableModel{t, false})
-	m, err := p.Run()
-	if err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
-	}
-	if m, ok := m.(tableModel); ok {
-		if !m.exit {
-			return m.table.Cursor()
+func CallClear() {
+	clear := make(map[string]func())
+	clear["linux"] = func() {
+		cmd := exec.Command("clear")
+		cmd.Stdout = os.Stdout
+		if err := cmd.Run(); err != nil {
+			panic("Error in Linux clear terminal")
 		}
-	} else {
-		fmt.Println("Error in table")
-		os.Exit(1)
 	}
-	return -1
+	clear["windows"] = func() {
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		if err := cmd.Run(); err != nil {
+			panic("Error in Windows clear terminal")
+		}
+	}
+	value, ok := clear[runtime.GOOS]
+	if ok {
+		value()
+	}
 }
 
 func PrintImage(img image.Image) {
@@ -104,10 +81,6 @@ func PrintMetadata(metadata map[string]string, color string) {
 			fmt.Println(style.Render(key) + strings.Repeat(" ", maxKeyLength-utf8.RuneCountInString(key)) + value)
 		}
 	}
-}
-
-func PrintList() {
-	createList()
 }
 
 func PrintReview(review string) {
