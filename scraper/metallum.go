@@ -186,3 +186,17 @@ func (m *Metallum) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	c.Visit(m.Link)
 	return mReviewColumnWidths[:], mReviewColumnTitles[:]
 }
+
+func (m *Metallum) GetCredits(data *ScrapedData) ([]int, []string) {
+	c := colly.NewCollector()
+
+	c.OnHTML("div#album_members_lineup table.lineupTable > tbody > tr.lineupRow", func(h *colly.HTMLElement) {
+		artist := h.ChildText("td:has(a)")
+		credit := h.ChildText("td:not(:has(a))")
+		data.Metadata[artist] = credit
+	})
+
+	c.Visit(m.Link)
+
+	return []int{}, []string{}
+}

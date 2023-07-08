@@ -117,16 +117,14 @@ func PrintReview(review string) {
 	for _, word := range words {
 		switch {
 		case strings.Contains(word, "\n"): // if it's word + \n + word
-			fmt.Printf("%s ", word)
 			totalTextLength = len(strings.Split(word, "\n")[1]) + 1
 		case len(word)+1+totalTextLength > screenWidth:
-			fmt.Printf("\n%s ", word)
+			fmt.Print("\n")
 			totalTextLength = len(word) + 1
 		default:
-			fmt.Printf("%s ", word)
 			totalTextLength += len(word) + 1
-
 		}
+		fmt.Printf("%s ", word)
 	}
 	fmt.Print("\n")
 }
