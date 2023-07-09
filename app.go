@@ -46,13 +46,23 @@ func app(s scraper.Scraper) {
 		if listIndex == 2 {
 			continue
 		}
+		gotCredits := false
+		gotReviews := false
+		var creditsData scraper.ScrapedData
+		var reviewData scraper.ScrapedData
 		for true {
 			if listIndex == 0 {
-				creditsData := scraper.ScrapeData(s.GetCredits)
+				if !gotCredits {
+					creditsData = scraper.ScrapeData(s.GetCredits)
+					gotCredits = true
+				}
 				cli.PrintMetadata(creditsData.Metadata, s.GetStyleColor())
 			}
 			if listIndex == 1 {
-				reviewData := scraper.ScrapeData(s.GetReviewsList)
+				if !gotReviews {
+					reviewData = scraper.ScrapeData(s.GetReviewsList)
+					gotReviews = true
+				}
 				reviewIndex := checkIndex(
 					cli.PrintRows(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
 				)
