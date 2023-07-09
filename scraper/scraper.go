@@ -21,6 +21,8 @@ type Scraper interface {
 	FindBand(*ScrapedData) ([]int, []string)
 	GetAlbumList(*ScrapedData) ([]int, []string)
 	GetAlbum(*ScrapedData) ([]int, []string)
+	GetReviewsList(*ScrapedData) ([]int, []string)
+	GetCredits(*ScrapedData) ([]int, []string)
 	GetStyleColor() string
 	SetLink(string)
 }
@@ -37,7 +39,9 @@ func ScrapeData(method TableConstructor) ScrapedData {
 	}
 
 	colWidths, colTitles := method(&data)
-	data.Columns = createColumns(colWidths, colTitles, data.Rows)
+	if len(colWidths) > 0 && len(colTitles) > 0 {
+		data.Columns = createColumns(colWidths, colTitles, data.Rows)
+	}
 	return data
 }
 

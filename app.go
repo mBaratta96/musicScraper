@@ -9,28 +9,30 @@ import (
 	"scraper"
 )
 
+func checkIndex(index int) int {
+	if index == -1 {
+		os.Exit(1)
+	}
+	return index
+}
+
 func app(s scraper.Scraper) {
 	data := scraper.ScrapeData(s.FindBand)
 	if len(data.Links) == 0 {
 		fmt.Println("No result for your search")
 		os.Exit(0)
 	}
-	index := 0
+	index := -1
 	if len(data.Links) > 1 {
 		index = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
 	}
-	if index == -1 {
-		os.Exit(1)
-	}
+	index = checkIndex(index)
 	s.SetLink(data.Links[index])
 	data = scraper.ScrapeData(s.GetAlbumList)
 	for true {
 		cli.CallClear()
 		cli.PrintMetadata(data.Metadata, s.GetStyleColor())
-		index = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
-		if index == -1 {
-			break
-		}
+		index = checkIndex(cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width))
 		s.SetLink(data.Links[index])
 		albumData := scraper.ScrapeData(s.GetAlbum)
 		cli.CallClear()
@@ -39,7 +41,28 @@ func app(s scraper.Scraper) {
 		}
 		cli.PrintMetadata(albumData.Metadata, s.GetStyleColor())
 		cli.PrintLink(data.Links[index])
-		_ = cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width)
+		index = checkIndex(cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
+		listIndex := checkIndex(cli.PrintList())
+		if listIndex == 2 {
+			continue
+		}
+		for true {
+			if listIndex == 0 {
+				creditsData := scraper.ScrapeData(s.GetCredits)
+				cli.PrintMetadata(creditsData.Metadata, s.GetStyleColor())
+			}
+			if listIndex == 1 {
+				reviewData := scraper.ScrapeData(s.GetReviewsList)
+				reviewIndex := checkIndex(
+					cli.PrintRows(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
+				)
+				cli.PrintReview(reviewData.Links[reviewIndex])
+			}
+			listIndex = checkIndex(cli.PrintList())
+			if listIndex == 2 {
+				break
+			}
+		}
 	}
 }
 

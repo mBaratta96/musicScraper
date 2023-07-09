@@ -3,9 +3,19 @@
 CLI tool for scraping information from musical website (Rateyourmusic, Metal
 Archives), with nice album ASCII art.
 
+## Features
+
+- Search for your favorite artists on Metallum and RateYourMusic (so far)
+
+- Show discography and album tracklist
+
+- Show album credits
+
+- Show user reviews.
+
 ## Usage
 
-So far, you have to build it by yourself. Clone the repo, then `cd musicScraper` and `go build`
+Clone the repo and build the package with `go build`, with Go version >= 1.18. Put the binary file in `~/.local/bin`.
 
 To list your RYM album rating, download your profile data and save it in the
 `.config/musicScrapper` folder as `user_albums_export.csv`.
@@ -19,6 +29,10 @@ musicScraper [OPTIONS] "name_of_artist"
   -website string
         Desired Website ('metallum' or 'rym')
 ```
+
+## Credits
+
+Made with [Colly](https://github.com/gocolly/colly) and [Bubbletea](https://github.com/charmbracelet/bubbletea).
 
 ## Screenshots
 

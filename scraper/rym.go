@@ -10,6 +10,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
 	"golang.org/x/exp/slices"
 )
@@ -26,6 +27,8 @@ var (
 	rAlbumlistColumnWidths = [8]int{4, 64, 4, 7, 7, 7, 12, 5}
 	rAlbumColumnTitles     = [3]string{"N.", "Title", "Duration"}
 	rAlbumColumnWidths     = [3]int{4, 64, 8}
+	rReviewColumnTitles    = [3]string{"User", "Date", "Rating"}
+	rReviewColumnWidths    = [3]int{64, 16, 7}
 )
 
 type RateYourMusic struct {
@@ -78,7 +81,7 @@ func getAlbumListDiscography(
 		c.OnHTML(
 			"div#column_container_right div.section_artist_biography > span.rendered_text",
 			func(h *colly.HTMLElement) {
-				data.Metadata["Biography"] = strings.ReplaceAll(h.Text, "\n", " ")
+				data.Metadata["Biography"] = h.Text
 			})
 	}
 
@@ -214,4 +217,51 @@ func (r *RateYourMusic) GetStyleColor() string {
 
 func (r *RateYourMusic) SetLink(link string) {
 	r.Link = link
+}
+
+func (r *RateYourMusic) GetReviewsList(data *ScrapedData) ([]int, []string) {
+	c := colly.NewCollector()
+
+	c.OnHTML("span.navspan a.navlinknext", func(h *colly.HTMLElement) {
+		h.Request.Visit(h.Attr("href"))
+	})
+
+	c.OnHTML("div.review > div.review_header ", func(h *colly.HTMLElement) {
+		var row [3]string
+		row[0] = h.ChildText("span.review_user")
+		row[1] = h.ChildText("span.review_date")
+		row[2] = strings.Split(h.ChildAttr("span.review_rating > img", "alt"), " ")[0]
+		data.Rows = append(data.Rows, row[:])
+	})
+
+	c.OnHTML("div.review > div.review_body ", func(h *colly.HTMLElement) {
+		data.Links = append(data.Links, h.ChildText("span.rendered_text"))
+	})
+
+	c.Visit(r.Link + "reviews/1")
+	return rReviewColumnWidths[:], rReviewColumnTitles[:]
+}
+
+func (r *RateYourMusic) GetCredits(data *ScrapedData) ([]int, []string) {
+	c := colly.NewCollector()
+
+	c.OnHTML("div.section_credits > ul.credits", func(h *colly.HTMLElement) {
+		h.ForEach("li[class!='expand_button']:not([style='display:none;'])", func(_ int, h *colly.HTMLElement) {
+			artist := h.ChildText("a.artist")
+			if len(artist) == 0 {
+				artist = h.ChildText("span:not([class])")
+			}
+			credit := []string{}
+			h.ForEach("span.role_name ", func(i int, h *colly.HTMLElement) {
+				h.DOM.Contents().Not("span.role_tracks").Each(func(_ int, s *goquery.Selection) {
+					credit = append(credit, strings.ToUpper(s.Text()[:1])+s.Text()[1:])
+				})
+			})
+			data.Metadata[artist] = strings.Join(credit, ", ")
+		})
+	})
+
+	c.Visit(r.Link)
+
+	return []int{}, []string{}
 }
