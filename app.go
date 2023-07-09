@@ -11,7 +11,7 @@ import (
 
 func checkIndex(index int) int {
 	if index == -1 {
-		os.Exit(1)
+		os.Exit(0)
 	}
 	return index
 }
