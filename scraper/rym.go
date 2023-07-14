@@ -112,6 +112,7 @@ func getAlbumListDiscography(
 
 func (r *RateYourMusic) FindBand(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
+	data.Links = make([]string, 0)
 
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
 		band_link := DOMAIN + h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
@@ -134,6 +135,8 @@ func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	var tableQuery string
 	var hasBio bool
 	var visitLink string
+	data.Links = make([]string, 0)
+	data.Metadata = make(map[string]string)
 
 	if r.Credits {
 		albumTables = []AlbumTable{{Query: "div.disco_search_results > div.disco_release", Section: "Credits"}}
@@ -158,6 +161,7 @@ func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 
 func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
+	data.Metadata = make(map[string]string)
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
 		image_url := h.ChildAttr("img", "src")
@@ -221,6 +225,7 @@ func (r *RateYourMusic) SetLink(link string) {
 
 func (r *RateYourMusic) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
+	data.Links = make([]string, 0)
 
 	c.OnHTML("span.navspan a.navlinknext", func(h *colly.HTMLElement) {
 		h.Request.Visit(h.Attr("href"))
@@ -242,8 +247,9 @@ func (r *RateYourMusic) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	return rReviewColumnWidths[:], rReviewColumnTitles[:]
 }
 
-func (r *RateYourMusic) GetCredits(data *ScrapedData) ([]int, []string) {
+func (r *RateYourMusic) GetCredits() map[string]string {
 	c := colly.NewCollector()
+	credits := make(map[string]string)
 
 	c.OnHTML("div.section_credits > ul.credits", func(h *colly.HTMLElement) {
 		h.ForEach("li[class!='expand_button']:not([style='display:none;'])", func(_ int, h *colly.HTMLElement) {
@@ -257,11 +263,11 @@ func (r *RateYourMusic) GetCredits(data *ScrapedData) ([]int, []string) {
 					credit = append(credit, strings.ToUpper(s.Text()[:1])+s.Text()[1:])
 				})
 			})
-			data.Metadata[artist] = strings.Join(credit, ", ")
+			credits[artist] = strings.Join(credit, ", ")
 		})
 	})
 
 	c.Visit(r.Link)
 
-	return []int{}, []string{}
+	return credits
 }

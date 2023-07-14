@@ -10,8 +10,9 @@ type ColumnData struct {
 }
 
 type ScrapedData struct {
-	Rows     [][]string
-	Columns  ColumnData
+	Rows    [][]string
+	Columns ColumnData
+	// optionals
 	Links    []string
 	Metadata map[string]string
 	Image    image.Image
@@ -22,7 +23,7 @@ type Scraper interface {
 	GetAlbumList(*ScrapedData) ([]int, []string)
 	GetAlbum(*ScrapedData) ([]int, []string)
 	GetReviewsList(*ScrapedData) ([]int, []string)
-	GetCredits(*ScrapedData) ([]int, []string)
+	GetCredits() map[string]string
 	GetStyleColor() string
 	SetLink(string)
 }
@@ -30,18 +31,11 @@ type Scraper interface {
 type TableConstructor func(*ScrapedData) ([]int, []string)
 
 func ScrapeData(method TableConstructor) ScrapedData {
-	data := ScrapedData{
-		Rows:     make([][]string, 0),
-		Columns:  ColumnData{},
-		Links:    make([]string, 0),
-		Metadata: make(map[string]string),
-		Image:    nil,
-	}
+	data := ScrapedData{}
+	data.Rows = make([][]string, 0)
 
 	colWidths, colTitles := method(&data)
-	if len(colWidths) > 0 && len(colTitles) > 0 {
-		data.Columns = createColumns(colWidths, colTitles, data.Rows)
-	}
+	data.Columns = createColumns(colWidths, colTitles, data.Rows)
 	return data
 }
 

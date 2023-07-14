@@ -54,6 +54,7 @@ func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
 
 func (m *Metallum) FindBand(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
+	data.Links = make([]string, 0)
 
 	c.OnResponse(func(r *colly.Response) {
 		var response SearchResponse
@@ -92,6 +93,8 @@ func (m *Metallum) FindBand(data *ScrapedData) ([]int, []string) {
 
 func (m *Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
+	data.Links = make([]string, 0)
+	data.Metadata = make(map[string]string)
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
@@ -117,6 +120,7 @@ func (m *Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 
 func (m *Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
+	data.Links = make([]string, 0)
 
 	c.OnHTML("div#album_tabs_tracklist tr.even, div#album_tabs_tracklist tr.odd", func(h *colly.HTMLElement) {
 		var row [4]string
@@ -159,6 +163,7 @@ func (m *Metallum) SetLink(link string) {
 
 func (m *Metallum) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
+	data.Links = make([]string, 0)
 
 	c.OnHTML("div#album_tabs_reviews tr.even, div#album_tabs_reviews tr.odd", func(h *colly.HTMLElement) {
 		var row [4]string
@@ -187,16 +192,17 @@ func (m *Metallum) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	return mReviewColumnWidths[:], mReviewColumnTitles[:]
 }
 
-func (m *Metallum) GetCredits(data *ScrapedData) ([]int, []string) {
+func (m *Metallum) GetCredits() map[string]string {
 	c := colly.NewCollector()
+	credits := make(map[string]string)
 
 	c.OnHTML("div#album_members_lineup table.lineupTable > tbody > tr.lineupRow", func(h *colly.HTMLElement) {
 		artist := h.ChildText("td:has(a)")
 		credit := h.ChildText("td:not(:has(a))")
-		data.Metadata[artist] = credit
+		credits[artist] = credit
 	})
 
 	c.Visit(m.Link)
 
-	return []int{}, []string{}
+	return credits
 }

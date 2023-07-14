@@ -48,7 +48,7 @@ func PrintLink(link string) {
 }
 
 // use utf8 for non-English alphabets
-func PrintMetadata(metadata map[string]string, color string) {
+func PrintMap(metadata map[string]string, color string) {
 	w, _, e := term.GetSize(0)
 	if e != nil {
 		panic(e)
