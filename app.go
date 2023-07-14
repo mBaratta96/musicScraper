@@ -31,7 +31,7 @@ func app(s scraper.Scraper) {
 	data = scraper.ScrapeData(s.GetAlbumList)
 	for true {
 		cli.CallClear()
-		cli.PrintMetadata(data.Metadata, s.GetStyleColor())
+		cli.PrintMap(data.Metadata, s.GetStyleColor())
 		index = checkIndex(cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width))
 		s.SetLink(data.Links[index])
 		albumData := scraper.ScrapeData(s.GetAlbum)
@@ -39,24 +39,24 @@ func app(s scraper.Scraper) {
 		if albumData.Image != nil {
 			cli.PrintImage(albumData.Image)
 		}
-		cli.PrintMetadata(albumData.Metadata, s.GetStyleColor())
+		cli.PrintMap(albumData.Metadata, s.GetStyleColor())
 		cli.PrintLink(data.Links[index])
-		index = checkIndex(cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
+		_ = checkIndex(cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
 		listIndex := checkIndex(cli.PrintList())
 		if listIndex == 2 {
 			continue
 		}
 		gotCredits := false
 		gotReviews := false
-		var creditsData scraper.ScrapedData
+		var creditsData map[string]string
 		var reviewData scraper.ScrapedData
 		for true {
 			if listIndex == 0 {
 				if !gotCredits {
-					creditsData = scraper.ScrapeData(s.GetCredits)
+					creditsData = s.GetCredits()
 					gotCredits = true
 				}
-				cli.PrintMetadata(creditsData.Metadata, s.GetStyleColor())
+				cli.PrintMap(creditsData, s.GetStyleColor())
 			}
 			if listIndex == 1 {
 				if !gotReviews {

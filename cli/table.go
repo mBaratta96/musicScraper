@@ -57,7 +57,7 @@ func createColumns(columnNames []string, widths []int) []table.Column {
 	for _, width := range widths {
 		totalColumnWidth += width
 	}
-	maxScreenSize := screenWidth - 2*(len(columnNames)+1)
+	maxScreenSize := screenWidth - 2*(len(columnNames)+1) // add padding between columns
 	for i, width := range widths {
 		var w int
 		if totalColumnWidth < maxScreenSize {
