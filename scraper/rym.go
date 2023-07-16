@@ -34,6 +34,7 @@ var (
 type RateYourMusic struct {
 	Link    string
 	Ratings RYMRatingSlice
+	Cookies string
 	Credits bool
 }
 
