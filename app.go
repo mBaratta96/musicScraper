@@ -99,11 +99,18 @@ func main() {
 	if *website == "metallum" {
 		app(&scraper.Metallum{Link: search})
 	} else {
-		app(&scraper.RateYourMusic{
+		// app(&scraper.RateYourMusic{
+		// 	Link:    search,
+		// 	Credits: *rymCredits,
+		// 	Ratings: scraper.ReadRYMRatings(configFilePath),
+		// 	Cookies: scraper.ReadRYMCookies(cookiesFilePath),
+		// })
+		r := &scraper.RateYourMusic{
 			Link:    search,
 			Credits: *rymCredits,
 			Ratings: scraper.ReadRYMRatings(configFilePath),
 			Cookies: scraper.ReadRYMCookies(cookiesFilePath),
-		})
+		}
+		r.SendRating(10)
 	}
 }

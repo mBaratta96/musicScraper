@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/gocarina/gocsv"
 )
@@ -64,9 +63,9 @@ func ReadRYMRatings(path string) RYMRatingSlice {
 	return RYMRatingSlice{Ids: ids, Ratings: ratings}
 }
 
-func ReadRYMCookies(path string) string {
+func ReadRYMCookies(path string) map[string]string {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return ""
+		return nil
 	}
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -77,11 +76,9 @@ func ReadRYMCookies(path string) string {
 	if err != nil {
 		panic(err)
 	}
-	cookie_list := make([]string, 0)
+	cookie_map := make(map[string]string)
 	for _, cookie := range cookies {
-		cookie_list = append(cookie_list, fmt.Sprintf("%s=%s", cookie.Name, cookie.Value))
+		cookie_map[cookie.Name] = cookie.Value
 	}
-	cookie_header := strings.Join(cookie_list, "; ")
-	fmt.Println(cookie_header)
-	return cookie_header
+	return cookie_map
 }

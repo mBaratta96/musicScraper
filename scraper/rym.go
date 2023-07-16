@@ -34,7 +34,7 @@ var (
 type RateYourMusic struct {
 	Link    string
 	Ratings RYMRatingSlice
-	Cookies string
+	Cookies map[string]string
 	Credits bool
 }
 
@@ -271,4 +271,38 @@ func (r *RateYourMusic) GetCredits() map[string]string {
 	c.Visit(r.Link)
 
 	return credits
+}
+
+func (r *RateYourMusic) SendRating(rating int) {
+	c := colly.NewCollector()
+
+	formRequest := map[string][]byte{
+		"type":          []byte("l"),
+		"assoc_id":      []byte("163"),
+		"rating":        []byte(fmt.Sprintf("%d", rating)),
+		"action":        []byte("CatalogSetRating"),
+		"rym_ajax_req":  []byte("1"),
+		"request_token": []byte(strings.ReplaceAll(r.Cookies["ulv"], "%2e", ".")),
+	}
+
+	c.OnRequest(func(req *colly.Request) {
+		cookieString := make([]string, 0)
+		fmt.Println("Posting gocolly.jpg to", req.URL.String())
+		for cookieName, cookieValue := range r.Cookies {
+			cookieString = append(cookieString, fmt.Sprintf("%s=%s", cookieName, cookieValue))
+		}
+		header := strings.Join(cookieString, "; ")
+		fmt.Println(header)
+		req.Headers.Set("Cookie", header)
+	})
+
+	c.OnResponse(func(r *colly.Response) {
+		fmt.Println(r.StatusCode)
+	})
+
+	c.OnError(func(_ *colly.Response, err error) {
+		fmt.Println("Something went wrong:", err)
+	})
+
+	c.PostMultipart("https://rateyourmusic.com/httprequest/CatalogSetRating", formRequest)
 }
