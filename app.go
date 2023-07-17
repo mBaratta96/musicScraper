@@ -22,8 +22,7 @@ func app(s scraper.Scraper) {
 	index := -1
 	if len(data.Links) == 0 {
 		fmt.Println("No result for your search")
-	}
-	if len(data.Links) > 1 {
+	} else {
 		index = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
 	}
 	index = checkIndex(index)
@@ -118,7 +117,9 @@ func main() {
 		r.Link = search
 		r.Credits = *rymCredits
 		r.Login(loginFilePath)
-		r.DownloadUserData()
+		if r.Cookies != nil {
+			r.DownloadUserData()
+		}
 		app(r)
 	}
 }

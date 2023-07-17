@@ -276,7 +276,10 @@ func (r *RateYourMusic) GetCredits() map[string]string {
 }
 
 func (r *RateYourMusic) Login(path string) {
-	user, password := readUserLoginData(path)
+	user, password, err := readUserLoginData(path)
+	if err != nil {
+		return
+	}
 	formRequest := map[string][]byte{
 		"user":             []byte(user),
 		"password":         []byte(password),
@@ -367,7 +370,10 @@ func (r *RateYourMusic) SendRating(rating string, id string) {
 }
 
 func (r *RateYourMusic) GetListChoices() []string {
-	return append(listMenuDefaultChoices, "Set rating")
+	if r.Cookies != nil {
+		return append(listMenuDefaultChoices, "Set rating")
+	}
+	return listMenuDefaultChoices
 }
 
 func (r *RateYourMusic) GetAdditionalFunctions() map[int]interface{} {

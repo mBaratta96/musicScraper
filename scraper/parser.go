@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -50,9 +51,10 @@ func readRYMRatings(payload []byte) map[int]int {
 	return ratings
 }
 
-func readUserLoginData(path string) (string, string) {
+func readUserLoginData(path string) (string, string, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		panic(err)
+		fmt.Println("No login file found in " + path + ". Skipped user authentication")
+		return "", "", errors.New("No file")
 	}
 	loginFile, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -63,5 +65,5 @@ func readUserLoginData(path string) (string, string) {
 	if err != nil {
 		panic(err)
 	}
-	return loginData.User, loginData.Password
+	return loginData.User, loginData.Password, nil
 }
