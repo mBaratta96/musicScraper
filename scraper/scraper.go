@@ -26,7 +26,16 @@ type Scraper interface {
 	GetCredits() map[string]string
 	GetStyleColor() string
 	SetLink(string)
+	GetListChoices() []string
+	GetAdditionalFunctions() map[int]interface{}
 }
+
+var choiceMap = map[string]int{
+	"Go back":      0,
+	"Show credits": 1,
+	"Show reviews": 2,
+}
+var listMenuDefaultChoices = []string{"Go back", "Show credits", "Show reviews"}
 
 type TableConstructor func(*ScrapedData) ([]int, []string)
 

@@ -192,6 +192,7 @@ func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
 		if len(r.Ratings) > 0 {
 			albumId := h.Attr("value")
 			if id, err := strconv.Atoi(albumId[6 : len(albumId)-1]); err == nil {
+				data.Metadata["ID"] = fmt.Sprintf("%d", id)
 				if rating, ok := r.Ratings[id]; ok {
 					data.Metadata["Vote"] = fmt.Sprintf("%.1f", float32(rating)/2)
 				}
@@ -338,13 +339,13 @@ func (r *RateYourMusic) DownloadUserData() {
 	c.Visit(DOMAIN + "/~" + r.Cookies["username"])
 }
 
-func (r *RateYourMusic) SendRating(rating int) {
+func (r *RateYourMusic) SendRating(rating string, id string) {
 	c := colly.NewCollector()
 
 	formRequest := map[string][]byte{
 		"type":          []byte("l"),
-		"assoc_id":      []byte("163"),
-		"rating":        []byte(fmt.Sprintf("%d", rating)),
+		"assoc_id":      []byte(id),
+		"rating":        []byte(rating),
 		"action":        []byte("CatalogSetRating"),
 		"rym_ajax_req":  []byte("1"),
 		"request_token": []byte(strings.ReplaceAll(r.Cookies["ulv"], "%2e", ".")),
@@ -355,7 +356,7 @@ func (r *RateYourMusic) SendRating(rating int) {
 	})
 
 	c.OnResponse(func(r *colly.Response) {
-		fmt.Println(r.StatusCode)
+		fmt.Println(r.StatusCode, "Vote has been uploaded.")
 	})
 
 	c.OnError(func(_ *colly.Response, err error) {
@@ -363,4 +364,12 @@ func (r *RateYourMusic) SendRating(rating int) {
 	})
 
 	c.PostMultipart("https://rateyourmusic.com/httprequest/CatalogSetRating", formRequest)
+}
+
+func (r *RateYourMusic) GetListChoices() []string {
+	return append(listMenuDefaultChoices, "Set rating")
+}
+
+func (r *RateYourMusic) GetAdditionalFunctions() map[int]interface{} {
+	return map[int]interface{}{3: r.SendRating}
 }

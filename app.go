@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"scraper"
+	"strconv"
 )
 
 func checkIndex(index int) int {
@@ -18,11 +19,10 @@ func checkIndex(index int) int {
 
 func app(s scraper.Scraper) {
 	data := scraper.ScrapeData(s.FindBand)
+	index := -1
 	if len(data.Links) == 0 {
 		fmt.Println("No result for your search")
-		os.Exit(0)
 	}
-	index := -1
 	if len(data.Links) > 1 {
 		index = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
 	}
@@ -42,8 +42,8 @@ func app(s scraper.Scraper) {
 		cli.PrintMap(albumData.Metadata, s.GetStyleColor())
 		cli.PrintLink(data.Links[index])
 		_ = checkIndex(cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
-		listIndex := checkIndex(cli.PrintList())
-		if listIndex == 2 {
+		listIndex := checkIndex(cli.PrintList(s.GetListChoices()))
+		if listIndex == 0 {
 			continue
 		}
 		gotCredits := false
@@ -51,14 +51,15 @@ func app(s scraper.Scraper) {
 		var creditsData map[string]string
 		var reviewData scraper.ScrapedData
 		for true {
-			if listIndex == 0 {
+			switch listIndex {
+			case 1:
 				if !gotCredits {
 					creditsData = s.GetCredits()
 					gotCredits = true
 				}
 				cli.PrintMap(creditsData, s.GetStyleColor())
-			}
-			if listIndex == 1 {
+
+			case 2:
 				if !gotReviews {
 					reviewData = scraper.ScrapeData(s.GetReviewsList)
 					gotReviews = true
@@ -67,9 +68,24 @@ func app(s scraper.Scraper) {
 					cli.PrintRows(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
 				)
 				cli.PrintReview(reviewData.Links[reviewIndex])
+			case 3:
+				var rating string
+				for true {
+					fmt.Println("Insert rating (0 to 10):")
+					if _, err := fmt.Scanln(&rating); err != nil {
+						panic(err)
+					}
+					if i, err := strconv.Atoi(rating); err == nil {
+						if i >= 0 && i <= 10 {
+							break
+						}
+					}
+					fmt.Println("Wrong rating value")
+				}
+				s.GetAdditionalFunctions()[3].(func(string, string))(rating, albumData.Metadata["ID"])
 			}
-			listIndex = checkIndex(cli.PrintList())
-			if listIndex == 2 {
+			listIndex = checkIndex(cli.PrintList(s.GetListChoices()))
+			if listIndex == 0 {
 				break
 			}
 		}
