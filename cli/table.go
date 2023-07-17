@@ -81,7 +81,7 @@ func createRows(rowsString [][]string) []table.Row {
 	return rows
 }
 
-func PrintRows(rowsString [][]string, columnsString []string, widths []int) int {
+func PrintTable(rowsString [][]string, columnsString []string, widths []int) int {
 	columns := createColumns(columnsString, widths)
 	rows := createRows(rowsString)
 	_, screenHeigth, _ := term.GetSize(int(os.Stdout.Fd()))

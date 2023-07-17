@@ -19,15 +19,15 @@ type ScrapedData struct {
 }
 
 type Scraper interface {
-	FindBand(*ScrapedData) ([]int, []string)
-	GetAlbumList(*ScrapedData) ([]int, []string)
-	GetAlbum(*ScrapedData) ([]int, []string)
-	GetReviewsList(*ScrapedData) ([]int, []string)
-	GetCredits() map[string]string
-	GetStyleColor() string
+	SearchBand(*ScrapedData) ([]int, []string)
+	AlbumList(*ScrapedData) ([]int, []string)
+	Album(*ScrapedData) ([]int, []string)
+	ReviewsList(*ScrapedData) ([]int, []string)
+	Credits() map[string]string
+	StyleColor() string
 	SetLink(string)
-	GetListChoices() []string
-	GetAdditionalFunctions() map[int]interface{}
+	ListChoices() []string
+	AdditionalFunctions() map[int]interface{}
 }
 
 var listMenuDefaultChoices = []string{"Go back", "Show credits", "Show reviews"}

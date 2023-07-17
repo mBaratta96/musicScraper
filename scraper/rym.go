@@ -33,10 +33,10 @@ var (
 )
 
 type RateYourMusic struct {
-	Link    string
-	Ratings map[int]int
-	Cookies map[string]string
-	Credits bool
+	Link       string
+	Ratings    map[int]int
+	Cookies    map[string]string
+	GetCredits bool
 }
 
 type AlbumTable struct {
@@ -112,7 +112,7 @@ func getAlbumListDiscography(
 	c.Visit(link)
 }
 
-func (r *RateYourMusic) FindBand(data *ScrapedData) ([]int, []string) {
+func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
 
@@ -132,7 +132,7 @@ func (r *RateYourMusic) FindBand(data *ScrapedData) ([]int, []string) {
 	return rBandColumnWidths[:], rBandColumnTitles[:]
 }
 
-func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
+func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	var albumTables []AlbumTable
 	var tableQuery string
 	var hasBio bool
@@ -140,7 +140,7 @@ func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	data.Links = make([]string, 0)
 	data.Metadata = make(map[string]string)
 
-	if r.Credits {
+	if r.GetCredits {
 		albumTables = []AlbumTable{{Query: "div.disco_search_results > div.disco_release", Section: "Credits"}}
 		tableQuery = "div#column_container_left div.release_credits"
 		hasBio = false
@@ -161,7 +161,7 @@ func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	return rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:]
 }
 
-func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
+func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Metadata = make(map[string]string)
 
@@ -217,7 +217,7 @@ func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
 	return rAlbumColumnWidths[:], rAlbumColumnTitles[:]
 }
 
-func (r *RateYourMusic) GetStyleColor() string {
+func (r *RateYourMusic) StyleColor() string {
 	return RYMSTYLECOLOR
 }
 
@@ -225,7 +225,7 @@ func (r *RateYourMusic) SetLink(link string) {
 	r.Link = link
 }
 
-func (r *RateYourMusic) GetReviewsList(data *ScrapedData) ([]int, []string) {
+func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
 
@@ -249,7 +249,7 @@ func (r *RateYourMusic) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	return rReviewColumnWidths[:], rReviewColumnTitles[:]
 }
 
-func (r *RateYourMusic) GetCredits() map[string]string {
+func (r *RateYourMusic) Credits() map[string]string {
 	c := colly.NewCollector()
 	credits := make(map[string]string)
 
@@ -368,13 +368,13 @@ func (r *RateYourMusic) SendRating(rating string, id string) {
 	c.PostMultipart("https://rateyourmusic.com/httprequest/CatalogSetRating", formRequest)
 }
 
-func (r *RateYourMusic) GetListChoices() []string {
+func (r *RateYourMusic) ListChoices() []string {
 	if r.Cookies != nil {
 		return append(listMenuDefaultChoices, "Set rating")
 	}
 	return listMenuDefaultChoices
 }
 
-func (r *RateYourMusic) GetAdditionalFunctions() map[int]interface{} {
+func (r *RateYourMusic) AdditionalFunctions() map[int]interface{} {
 	return map[int]interface{}{3: r.SendRating}
 }

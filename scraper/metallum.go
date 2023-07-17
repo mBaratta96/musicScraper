@@ -52,7 +52,7 @@ func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
 	}
 }
 
-func (m *Metallum) FindBand(data *ScrapedData) ([]int, []string) {
+func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
 
@@ -87,7 +87,7 @@ func (m *Metallum) FindBand(data *ScrapedData) ([]int, []string) {
 	return mBandColumnWidths[:], mAlbumColumnTitles[:]
 }
 
-func (m *Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
+func (m *Metallum) AlbumList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
 	data.Metadata = make(map[string]string)
@@ -114,7 +114,7 @@ func (m *Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	return mAlbumlistColumnWidths[:], mAlbumlistColumnTitles[:]
 }
 
-func (m *Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
+func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
 	data.Metadata = make(map[string]string)
@@ -150,7 +150,7 @@ func (m *Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
 	return mAlbumColumnWidths[:], mAlbumColumnTitles[:]
 }
 
-func (m *Metallum) GetStyleColor() string {
+func (m *Metallum) StyleColor() string {
 	return METALLUMSTYLECOLOR
 }
 
@@ -158,7 +158,7 @@ func (m *Metallum) SetLink(link string) {
 	m.Link = link
 }
 
-func (m *Metallum) GetReviewsList(data *ScrapedData) ([]int, []string) {
+func (m *Metallum) ReviewsList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
 
@@ -189,7 +189,7 @@ func (m *Metallum) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	return mReviewColumnWidths[:], mReviewColumnTitles[:]
 }
 
-func (m *Metallum) GetCredits() map[string]string {
+func (m *Metallum) Credits() map[string]string {
 	c := colly.NewCollector()
 	credits := make(map[string]string)
 
@@ -203,10 +203,10 @@ func (m *Metallum) GetCredits() map[string]string {
 	return credits
 }
 
-func (m *Metallum) GetListChoices() []string {
+func (m *Metallum) ListChoices() []string {
 	return listMenuDefaultChoices
 }
 
-func (m *Metallum) GetAdditionalFunctions() map[int]interface{} {
+func (m *Metallum) AdditionalFunctions() map[int]interface{} {
 	return map[int]interface{}{}
 }
