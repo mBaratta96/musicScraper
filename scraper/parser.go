@@ -50,26 +50,6 @@ func readRYMRatings(payload []byte) map[int]int {
 	return ratings
 }
 
-func ReadRYMCookies(path string) map[string]string {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil
-	}
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		panic("Error when opening file: ")
-	}
-	var cookies []RYMCookie
-	err = json.Unmarshal(content, &cookies)
-	if err != nil {
-		panic(err)
-	}
-	cookie_map := make(map[string]string)
-	for _, cookie := range cookies {
-		cookie_map[cookie.Name] = cookie.Value
-	}
-	return cookie_map
-}
-
 func readUserLoginData(path string) (string, string) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		panic(err)
