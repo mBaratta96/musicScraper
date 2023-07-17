@@ -61,7 +61,6 @@ func (m *Metallum) FindBand(data *ScrapedData) ([]int, []string) {
 		if err := json.Unmarshal(r.Body, &response); err != nil {
 			fmt.Println("Can not unmarshal JSON")
 		}
-
 		for _, el := range response.AaData {
 			var row [3]string
 			for i, node := range el {
@@ -82,9 +81,6 @@ func (m *Metallum) FindBand(data *ScrapedData) ([]int, []string) {
 			}
 			data.Rows = append(data.Rows, row[:])
 		}
-	})
-	c.OnScraped(func(_ *colly.Response) {
-		data.Columns = createColumns(mBandColumnWidths[:], mAlbumlistColumnTitles[:], data.Rows)
 	})
 
 	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Link))
@@ -204,7 +200,6 @@ func (m *Metallum) GetCredits() map[string]string {
 	})
 
 	c.Visit(m.Link)
-
 	return credits
 }
 

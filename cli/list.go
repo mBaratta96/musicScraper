@@ -34,16 +34,13 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	if !ok {
 		return
 	}
-
 	str := fmt.Sprintf("%s", i)
-
 	fn := itemStyle.Render
 	if index == m.Index() {
 		fn = func(s string) string {
 			return selectedItemStyle.Render("> " + s)
 		}
 	}
-
 	fmt.Fprint(w, fn(str))
 }
 
@@ -62,7 +59,6 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
 		return m, nil
-
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "ctrl+c":
@@ -77,7 +73,6 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	}
-
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
 	return m, cmd
@@ -91,14 +86,13 @@ func (m listModel) View() string {
 }
 
 func PrintList(choices []string) int {
+	const defaultWidth = 20
 	items := []list.Item{}
 	choiceMap := make(map[string]int)
 	for i, choice := range choices {
 		items = append(items, item(choice))
 		choiceMap[choice] = i
 	}
-
-	const defaultWidth = 20
 
 	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
 	l.Title = "Select operation:"

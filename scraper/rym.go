@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"strconv"
-	"strings"
-
 	_ "image/jpeg"
 	_ "image/png"
+	"strconv"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
@@ -271,7 +270,6 @@ func (r *RateYourMusic) GetCredits() map[string]string {
 	})
 
 	c.Visit(r.Link)
-
 	return credits
 }
 
@@ -302,6 +300,7 @@ func (r *RateYourMusic) Login(path string) {
 			r.Cookies[cookie[0]] = cookie[1]
 		}
 	})
+
 	c.PostMultipart(LOGIN, formRequest)
 }
 

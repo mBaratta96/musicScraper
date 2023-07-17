@@ -94,7 +94,6 @@ func app(s scraper.Scraper) {
 func main() {
 	website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
 	rymCredits := flag.Bool("credits", false, "Display RYM credits")
-
 	flag.Parse()
 	if len(flag.Args()) == 0 {
 		os.Exit(1)
@@ -104,12 +103,14 @@ func main() {
 		os.Exit(1)
 	}
 	search := flag.Arg(0)
+
 	configFolder, err := os.UserConfigDir()
 	if err != nil {
 		fmt.Println("Cannot determine config folder")
 		os.Exit(1)
 	}
 	loginFilePath := filepath.Join(configFolder, "musicScraper", ".login.json")
+
 	if *website == "metallum" {
 		app(&scraper.Metallum{Link: search})
 	} else {
