@@ -12,12 +12,14 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
-	"golang.org/x/exp/slices"
 )
 
 const (
 	DOMAIN        string = "https://rateyourmusic.com"
 	RYMSTYLECOLOR string = "#427b58"
+	LOGIN         string = "https://rateyourmusic.com/httprequest/Login"
+	RATING        string = "https://rateyourmusic.com/httprequest/CatalogSetRating"
+	USERDATA      string = "https://rateyourmusic.com/user_albums_export?album_list_id="
 )
 
 var (
@@ -33,7 +35,7 @@ var (
 
 type RateYourMusic struct {
 	Link    string
-	Ratings RYMRatingSlice
+	Ratings map[int]int
 	Cookies map[string]string
 	Credits bool
 }
@@ -43,17 +45,17 @@ type AlbumTable struct {
 	Section string
 }
 
-func getVote(divId string, ratings RYMRatingSlice) string {
-	if len(ratings.Ids) == 0 || len(ratings.Ratings) == 0 {
+func getVote(divId string, ratings map[int]int) string {
+	if len(ratings) == 0 {
 		return ""
 	}
 	splitted := strings.Split(divId, "_")
 	isListened := false
 	var vote int
-	if release_id, err := strconv.Atoi(splitted[len(splitted)-1]); err == nil {
-		if slices.Contains(ratings.Ids, release_id) {
+	if releaseId, err := strconv.Atoi(splitted[len(splitted)-1]); err == nil {
+		if rating, ok := ratings[releaseId]; ok {
 			isListened = true
-			vote = ratings.Ratings[slices.Index(ratings.Ids, release_id)]
+			vote = rating
 		}
 	} else {
 		panic(err)
@@ -71,7 +73,7 @@ func getAlbumListDiscography(
 	tableQuery string,
 	albumTables []AlbumTable,
 	hasBio bool,
-	userRatings RYMRatingSlice,
+	userRatings map[int]int,
 ) {
 	c := colly.NewCollector()
 
@@ -187,12 +189,11 @@ func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
 		}
 	})
 	c.OnHTML("div.album_title > input.album_shortcut", func(h *colly.HTMLElement) {
-		if len(r.Ratings.Ids) > 0 && len(r.Ratings.Ratings) > 0 {
+		if len(r.Ratings) > 0 {
 			albumId := h.Attr("value")
 			if id, err := strconv.Atoi(albumId[6 : len(albumId)-1]); err == nil {
-				if slices.Contains(r.Ratings.Ids, id) {
-					vote := r.Ratings.Ratings[slices.Index(r.Ratings.Ids, id)]
-					data.Metadata["Vote"] = fmt.Sprintf("%.1f", float32(vote)/2)
+				if rating, ok := r.Ratings[id]; ok {
+					data.Metadata["Vote"] = fmt.Sprintf("%.1f", float32(rating)/2)
 				}
 			}
 		}
@@ -273,6 +274,70 @@ func (r *RateYourMusic) GetCredits() map[string]string {
 	return credits
 }
 
+func (r *RateYourMusic) Login(path string) {
+	user, password := readUserLoginData(path)
+	formRequest := map[string][]byte{
+		"user":             []byte(user),
+		"password":         []byte(password),
+		"remember":         []byte("false"),
+		"maintain_session": []byte("true"),
+		"rym_ajax_req":     []byte("1"),
+		"action":           []byte("Login"),
+	}
+	r.Cookies = make(map[string]string)
+	c := colly.NewCollector()
+
+	c.OnError(func(_ *colly.Response, err error) {
+		fmt.Println("Something went wrong:", err)
+	})
+
+	c.OnResponse(func(response *colly.Response) {
+		cookies := response.Headers.Values("Set-Cookie")
+		for _, cookieStr := range cookies {
+			cookie := strings.Split(strings.Split(cookieStr, "; ")[0], "=")
+			r.Cookies[cookie[0]] = cookie[1]
+		}
+	})
+	c.PostMultipart(LOGIN, formRequest)
+}
+
+func createCookieHeader(cookies map[string]string) string {
+	cookieString := make([]string, 0)
+	for cookieName, cookieValue := range cookies {
+		cookieString = append(cookieString, fmt.Sprintf("%s=%s", cookieName, cookieValue))
+	}
+	return strings.Join(cookieString, "; ")
+}
+
+func (r *RateYourMusic) DownloadUserData() {
+	var userId string
+	c := colly.NewCollector()
+
+	c.OnHTML("div.bubble_header.profile_header ", func(h *colly.HTMLElement) {
+		headerText := strings.Fields(h.Text)
+		for _, text := range headerText {
+			if strings.HasPrefix(text, "#") {
+				userId = text[1:]
+			}
+		}
+		h.Request.Visit(USERDATA + userId + "&noreview")
+	})
+
+	c.OnRequest(func(request *colly.Request) {
+		request.Headers.Set("Cookie", createCookieHeader(r.Cookies))
+	})
+	c.OnError(func(_ *colly.Response, err error) {
+		fmt.Println("Something went wrong:", err)
+	})
+	c.OnResponse(func(response *colly.Response) {
+		if response.Headers.Get("content-type") == "text/plain; charset=utf-8" {
+			r.Ratings = readRYMRatings(response.Body)
+		}
+	})
+
+	c.Visit(DOMAIN + "/~" + r.Cookies["username"])
+}
+
 func (r *RateYourMusic) SendRating(rating int) {
 	c := colly.NewCollector()
 
@@ -286,14 +351,7 @@ func (r *RateYourMusic) SendRating(rating int) {
 	}
 
 	c.OnRequest(func(req *colly.Request) {
-		cookieString := make([]string, 0)
-		fmt.Println("Posting gocolly.jpg to", req.URL.String())
-		for cookieName, cookieValue := range r.Cookies {
-			cookieString = append(cookieString, fmt.Sprintf("%s=%s", cookieName, cookieValue))
-		}
-		header := strings.Join(cookieString, "; ")
-		fmt.Println(header)
-		req.Headers.Set("Cookie", header)
+		req.Headers.Set("Cookie", createCookieHeader(r.Cookies))
 	})
 
 	c.OnResponse(func(r *colly.Response) {

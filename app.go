@@ -94,23 +94,15 @@ func main() {
 		fmt.Println("Cannot determine config folder")
 		os.Exit(1)
 	}
-	configFilePath := filepath.Join(configFolder, "musicScraper", "user_albums_export.csv")
-	cookiesFilePath := filepath.Join(configFolder, "musicScraper", ".cookies.json")
+	loginFilePath := filepath.Join(configFolder, "musicScraper", ".login.json")
 	if *website == "metallum" {
 		app(&scraper.Metallum{Link: search})
 	} else {
-		// app(&scraper.RateYourMusic{
-		// 	Link:    search,
-		// 	Credits: *rymCredits,
-		// 	Ratings: scraper.ReadRYMRatings(configFilePath),
-		// 	Cookies: scraper.ReadRYMCookies(cookiesFilePath),
-		// })
-		r := &scraper.RateYourMusic{
-			Link:    search,
-			Credits: *rymCredits,
-			Ratings: scraper.ReadRYMRatings(configFilePath),
-			Cookies: scraper.ReadRYMCookies(cookiesFilePath),
-		}
-		r.SendRating(10)
+		r := &scraper.RateYourMusic{}
+		r.Link = search
+		r.Credits = *rymCredits
+		r.Login(loginFilePath)
+		r.DownloadUserData()
+		app(r)
 	}
 }
