@@ -23,7 +23,7 @@ To list your RYM album rating, download your profile data and save it in the
 `.config/musicScrapper` folder as `user_albums_export.csv`.
 
 To set a rating in RYM, you'll have to provide your authentication data. Create
-a `.login.json` file in `~/.congig/musicScraper` and write this simple login file:
+a `.login.json` file in `~/.config/musicScraper` and write this simple login file:
 
 ```json 
 { 
