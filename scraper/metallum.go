@@ -121,6 +121,7 @@ func (m *Metallum) GetAlbumList(data *ScrapedData) ([]int, []string) {
 func (m *Metallum) GetAlbum(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
+	data.Metadata = make(map[string]string)
 
 	c.OnHTML("div#album_tabs_tracklist tr.even, div#album_tabs_tracklist tr.odd", func(h *colly.HTMLElement) {
 		var row [4]string
@@ -205,4 +206,12 @@ func (m *Metallum) GetCredits() map[string]string {
 	c.Visit(m.Link)
 
 	return credits
+}
+
+func (m *Metallum) GetListChoices() []string {
+	return listMenuDefaultChoices
+}
+
+func (m *Metallum) GetAdditionalFunctions() map[int]interface{} {
+	return map[int]interface{}{}
 }

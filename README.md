@@ -13,6 +13,8 @@ Archives), with nice album ASCII art.
 
 - Show user reviews.
 
+- **New RYM feature:** Login and rate an album.
+
 ## Usage
 
 Clone the repo and build the package with `go build`, with Go version >= 1.18. Put the binary file in `~/.local/bin`.
@@ -20,13 +22,24 @@ Clone the repo and build the package with `go build`, with Go version >= 1.18. P
 To list your RYM album rating, download your profile data and save it in the
 `.config/musicScrapper` folder as `user_albums_export.csv`.
 
+To set a rating in RYM, you'll have to provide your authentication data. Create
+a `.login.json` file in `~/.congig/musicScraper` and write this simple login file:
+
+```json 
+{ 
+    "user": "yourRYMusername",
+    "password": "yourRYMPassword"
+}
+
+```
+
 ```shell
 
 musicScraper [OPTIONS] "name_of_artist"
 
 -credits
         Display RYM credits
-  -website string
+-website string
         Desired Website ('metallum' or 'rym')
 ```
 

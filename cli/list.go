@@ -90,14 +90,13 @@ func (m listModel) View() string {
 	return "\n" + m.list.View()
 }
 
-var choiceMap = map[string]int{
-	"Show credits": 0,
-	"Show reviews": 1,
-	"Go back":      2,
-}
-
-func PrintList() int {
-	items := []list.Item{item("Show credits"), item("Show reviews"), item("Go back")}
+func PrintList(choices []string) int {
+	items := []list.Item{}
+	choiceMap := make(map[string]int)
+	for i, choice := range choices {
+		items = append(items, item(choice))
+		choiceMap[choice] = i
+	}
 
 	const defaultWidth = 20
 

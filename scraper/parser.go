@@ -1,8 +1,11 @@
 package scraper
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 
@@ -14,44 +17,53 @@ type RYMRating struct {
 	Rating     string `csv:"Rating"`
 }
 
-type RYMRatingSlice struct {
-	Ids     []int
-	Ratings []int
+type LoginData struct {
+	User     string `json:"user"`
+	Password string `json:"password"`
 }
 
-func ReadRYMRatings(path string) RYMRatingSlice {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return RYMRatingSlice{}
-	}
-	ratingsFile, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.ModePerm)
-	if err != nil {
-		fmt.Println("Error in leading ratings: ", err)
-		os.Exit(1)
-	}
-	defer ratingsFile.Close()
+type RYMCookie struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
 
+func readRYMRatings(payload []byte) map[int]int {
 	data := make([]RYMRating, 0)
 	gocsv.SetCSVReader(func(in io.Reader) gocsv.CSVReader {
 		return gocsv.LazyCSVReader(in) // Allows use of quotes in CSV
 	})
-	if err := gocsv.UnmarshalFile(ratingsFile, &data); err != nil { // Load clients from file
+	if err := gocsv.UnmarshalBytes(payload, &data); err != nil { // Load clients from file
 		fmt.Println("Error in leading ratings: ", err)
 		os.Exit(1)
 	}
-	ids := []int{}
-	ratings := []int{}
+
+	ratings := make(map[int]int)
 	for _, d := range data {
-		if id, err := strconv.Atoi(d.RYMAlbumId); err == nil {
-			ids = append(ids, id)
-		} else {
+		if id, err := strconv.Atoi(d.RYMAlbumId); err != nil {
 			panic(err)
-		}
-		if rating, err := strconv.Atoi(d.Rating); err == nil {
-			ratings = append(ratings, rating)
-		} else {
+		} else if rating, err := strconv.Atoi(d.Rating); err != nil {
 			panic(err)
+		} else {
+			ratings[id] = rating
 		}
 	}
 
-	return RYMRatingSlice{Ids: ids, Ratings: ratings}
+	return ratings
+}
+
+func readUserLoginData(path string) (string, string, error) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		fmt.Println("No login file found in " + path + ". Skipped user authentication")
+		return "", "", errors.New("No file")
+	}
+	loginFile, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic("Error when opening file: ")
+	}
+	var loginData LoginData
+	err = json.Unmarshal(loginFile, &loginData)
+	if err != nil {
+		panic(err)
+	}
+	return loginData.User, loginData.Password, nil
 }
