@@ -94,6 +94,7 @@ func app(s scraper.Scraper) {
 func main() {
 	website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
 	rymCredits := flag.Bool("credits", false, "Display RYM credits")
+	rymDelay := flag.Int("delay", 1, "Set value of random delay for RYM. Set to 0 to disable.")
 	flag.Parse()
 	if len(flag.Args()) == 0 {
 		os.Exit(1)
@@ -117,6 +118,7 @@ func main() {
 		r := &scraper.RateYourMusic{}
 		r.Link = search
 		r.GetCredits = *rymCredits
+		r.Delay = *rymDelay
 		r.Login(loginFilePath)
 		if r.Cookies != nil {
 			r.DownloadUserData()
