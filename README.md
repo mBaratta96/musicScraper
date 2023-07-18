@@ -39,6 +39,8 @@ musicScraper [OPTIONS] "name_of_artist"
 
 -credits
         Display RYM credits
+-delay int
+        Set value of random delay for RYM (default 1). Set to 0 to disable.
 -website string
         Desired Website ('metallum' or 'rym')
 ```

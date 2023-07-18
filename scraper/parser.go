@@ -32,11 +32,10 @@ func readRYMRatings(payload []byte) map[int]int {
 	gocsv.SetCSVReader(func(in io.Reader) gocsv.CSVReader {
 		return gocsv.LazyCSVReader(in) // Allows use of quotes in CSV
 	})
-	if err := gocsv.UnmarshalBytes(payload, &data); err != nil { // Load clients from file
+	if err := gocsv.UnmarshalBytes(payload, &data); err != nil {
 		fmt.Println("Error in leading ratings: ", err)
 		os.Exit(1)
 	}
-
 	ratings := make(map[int]int)
 	for _, d := range data {
 		if id, err := strconv.Atoi(d.RYMAlbumId); err != nil {
@@ -47,7 +46,6 @@ func readRYMRatings(payload []byte) map[int]int {
 			ratings[id] = rating
 		}
 	}
-
 	return ratings
 }
 

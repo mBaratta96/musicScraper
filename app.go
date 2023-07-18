@@ -18,30 +18,30 @@ func checkIndex(index int) int {
 }
 
 func app(s scraper.Scraper) {
-	data := scraper.ScrapeData(s.FindBand)
+	data := scraper.ScrapeData(s.SearchBand)
 	index := -1
 	if len(data.Links) == 0 {
 		fmt.Println("No result for your search")
 	} else {
-		index = cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width)
+		index = cli.PrintTable(data.Rows, data.Columns.Title, data.Columns.Width)
 	}
 	index = checkIndex(index)
 	s.SetLink(data.Links[index])
-	data = scraper.ScrapeData(s.GetAlbumList)
+	data = scraper.ScrapeData(s.AlbumList)
 	for true {
 		cli.CallClear()
-		cli.PrintMap(data.Metadata, s.GetStyleColor())
-		index = checkIndex(cli.PrintRows(data.Rows, data.Columns.Title, data.Columns.Width))
+		cli.PrintMap(data.Metadata, s.StyleColor())
+		index = checkIndex(cli.PrintTable(data.Rows, data.Columns.Title, data.Columns.Width))
 		s.SetLink(data.Links[index])
-		albumData := scraper.ScrapeData(s.GetAlbum)
+		albumData := scraper.ScrapeData(s.Album)
 		cli.CallClear()
 		if albumData.Image != nil {
 			cli.PrintImage(albumData.Image)
 		}
-		cli.PrintMap(albumData.Metadata, s.GetStyleColor())
+		cli.PrintMap(albumData.Metadata, s.StyleColor())
 		cli.PrintLink(data.Links[index])
-		_ = checkIndex(cli.PrintRows(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
-		listIndex := checkIndex(cli.PrintList(s.GetListChoices()))
+		_ = checkIndex(cli.PrintTable(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
+		listIndex := checkIndex(cli.PrintList(s.ListChoices()))
 		if listIndex == 0 {
 			continue
 		}
@@ -53,18 +53,18 @@ func app(s scraper.Scraper) {
 			switch listIndex {
 			case 1:
 				if !gotCredits {
-					creditsData = s.GetCredits()
+					creditsData = s.Credits()
 					gotCredits = true
 				}
-				cli.PrintMap(creditsData, s.GetStyleColor())
+				cli.PrintMap(creditsData, s.StyleColor())
 
 			case 2:
 				if !gotReviews {
-					reviewData = scraper.ScrapeData(s.GetReviewsList)
+					reviewData = scraper.ScrapeData(s.ReviewsList)
 					gotReviews = true
 				}
 				reviewIndex := checkIndex(
-					cli.PrintRows(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
+					cli.PrintTable(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
 				)
 				cli.PrintReview(reviewData.Links[reviewIndex])
 			case 3:
@@ -81,9 +81,9 @@ func app(s scraper.Scraper) {
 					}
 					fmt.Println("Wrong rating value")
 				}
-				s.GetAdditionalFunctions()[3].(func(string, string))(rating, albumData.Metadata["ID"])
+				s.AdditionalFunctions()[3].(func(string, string))(rating, albumData.Metadata["ID"])
 			}
-			listIndex = checkIndex(cli.PrintList(s.GetListChoices()))
+			listIndex = checkIndex(cli.PrintList(s.ListChoices()))
 			if listIndex == 0 {
 				break
 			}
@@ -94,7 +94,7 @@ func app(s scraper.Scraper) {
 func main() {
 	website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
 	rymCredits := flag.Bool("credits", false, "Display RYM credits")
-
+	rymDelay := flag.Int("delay", 1, "Set value of random delay for RYM. Set to 0 to disable.")
 	flag.Parse()
 	if len(flag.Args()) == 0 {
 		os.Exit(1)
@@ -104,18 +104,21 @@ func main() {
 		os.Exit(1)
 	}
 	search := flag.Arg(0)
+
 	configFolder, err := os.UserConfigDir()
 	if err != nil {
 		fmt.Println("Cannot determine config folder")
 		os.Exit(1)
 	}
 	loginFilePath := filepath.Join(configFolder, "musicScraper", ".login.json")
+
 	if *website == "metallum" {
 		app(&scraper.Metallum{Link: search})
 	} else {
 		r := &scraper.RateYourMusic{}
 		r.Link = search
-		r.Credits = *rymCredits
+		r.GetCredits = *rymCredits
+		r.Delay = *rymDelay
 		r.Login(loginFilePath)
 		if r.Cookies != nil {
 			r.DownloadUserData()

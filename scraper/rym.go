@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"strconv"
-	"strings"
-
 	_ "image/jpeg"
 	_ "image/png"
+	"strconv"
+	"strings"
+	"time"
+
+	//"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
@@ -34,15 +36,32 @@ var (
 )
 
 type RateYourMusic struct {
-	Link    string
-	Ratings map[int]int
-	Cookies map[string]string
-	Credits bool
+	Delay      int
+	Link       string
+	Ratings    map[int]int
+	Cookies    map[string]string
+	GetCredits bool
 }
 
 type AlbumTable struct {
 	Query   string
 	Section string
+}
+
+func createCrawler(delay int) *colly.Collector {
+	c := colly.NewCollector(
+		colly.Async(true),
+		colly.UserAgent(
+			"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0",
+		))
+	if delay > 0 {
+		c.Limit(&colly.LimitRule{
+			DomainGlob:  "*",
+			Parallelism: 2,
+			RandomDelay: time.Duration(delay) * time.Second,
+		})
+	}
+	return c
 }
 
 func getVote(divId string, ratings map[int]int) string {
@@ -74,8 +93,9 @@ func getAlbumListDiscography(
 	albumTables []AlbumTable,
 	hasBio bool,
 	userRatings map[int]int,
+	delay int,
 ) {
-	c := colly.NewCollector()
+	c := createCrawler(delay)
 
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
 		data.Metadata["Top Album"] = h.Text
@@ -111,11 +131,12 @@ func getAlbumListDiscography(
 	})
 
 	c.Visit(link)
+	c.Wait()
 }
 
-func (r *RateYourMusic) FindBand(data *ScrapedData) ([]int, []string) {
-	c := colly.NewCollector()
+func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 	data.Links = make([]string, 0)
+	c := createCrawler(r.Delay)
 
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
 		band_link := DOMAIN + h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
@@ -130,10 +151,11 @@ func (r *RateYourMusic) FindBand(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Link, " ", "%20", -1)))
+	c.Wait()
 	return rBandColumnWidths[:], rBandColumnTitles[:]
 }
 
-func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
+func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	var albumTables []AlbumTable
 	var tableQuery string
 	var hasBio bool
@@ -141,7 +163,7 @@ func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 	data.Links = make([]string, 0)
 	data.Metadata = make(map[string]string)
 
-	if r.Credits {
+	if r.GetCredits {
 		albumTables = []AlbumTable{{Query: "div.disco_search_results > div.disco_release", Section: "Credits"}}
 		tableQuery = "div#column_container_left div.release_credits"
 		hasBio = false
@@ -158,12 +180,12 @@ func (r *RateYourMusic) GetAlbumList(data *ScrapedData) ([]int, []string) {
 		hasBio = true
 		visitLink = r.Link
 	}
-	getAlbumListDiscography(data, visitLink, tableQuery, albumTables, hasBio, r.Ratings)
+	getAlbumListDiscography(data, visitLink, tableQuery, albumTables, hasBio, r.Ratings, r.Delay)
 	return rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:]
 }
 
-func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
-	c := colly.NewCollector()
+func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
+	c := createCrawler(r.Delay)
 	data.Metadata = make(map[string]string)
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
@@ -215,10 +237,11 @@ func (r *RateYourMusic) GetAlbum(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.Visit(r.Link)
+	c.Wait()
 	return rAlbumColumnWidths[:], rAlbumColumnTitles[:]
 }
 
-func (r *RateYourMusic) GetStyleColor() string {
+func (r *RateYourMusic) StyleColor() string {
 	return RYMSTYLECOLOR
 }
 
@@ -226,8 +249,8 @@ func (r *RateYourMusic) SetLink(link string) {
 	r.Link = link
 }
 
-func (r *RateYourMusic) GetReviewsList(data *ScrapedData) ([]int, []string) {
-	c := colly.NewCollector()
+func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
+	c := createCrawler(r.Delay)
 	data.Links = make([]string, 0)
 
 	c.OnHTML("span.navspan a.navlinknext", func(h *colly.HTMLElement) {
@@ -247,11 +270,12 @@ func (r *RateYourMusic) GetReviewsList(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.Visit(r.Link + "reviews/1")
+	c.Wait()
 	return rReviewColumnWidths[:], rReviewColumnTitles[:]
 }
 
-func (r *RateYourMusic) GetCredits() map[string]string {
-	c := colly.NewCollector()
+func (r *RateYourMusic) Credits() map[string]string {
+	c := createCrawler(r.Delay)
 	credits := make(map[string]string)
 
 	c.OnHTML("div.section_credits > ul.credits", func(h *colly.HTMLElement) {
@@ -271,7 +295,7 @@ func (r *RateYourMusic) GetCredits() map[string]string {
 	})
 
 	c.Visit(r.Link)
-
+	c.Wait()
 	return credits
 }
 
@@ -289,7 +313,7 @@ func (r *RateYourMusic) Login(path string) {
 		"action":           []byte("Login"),
 	}
 	r.Cookies = make(map[string]string)
-	c := colly.NewCollector()
+	c := createCrawler(r.Delay)
 
 	c.OnError(func(_ *colly.Response, err error) {
 		fmt.Println("Something went wrong:", err)
@@ -302,7 +326,9 @@ func (r *RateYourMusic) Login(path string) {
 			r.Cookies[cookie[0]] = cookie[1]
 		}
 	})
+
 	c.PostMultipart(LOGIN, formRequest)
+	c.Wait()
 }
 
 func createCookieHeader(cookies map[string]string) string {
@@ -315,7 +341,7 @@ func createCookieHeader(cookies map[string]string) string {
 
 func (r *RateYourMusic) DownloadUserData() {
 	var userId string
-	c := colly.NewCollector()
+	c := createCrawler(r.Delay)
 
 	c.OnHTML("div.bubble_header.profile_header ", func(h *colly.HTMLElement) {
 		headerText := strings.Fields(h.Text)
@@ -340,10 +366,11 @@ func (r *RateYourMusic) DownloadUserData() {
 	})
 
 	c.Visit(DOMAIN + "/~" + r.Cookies["username"])
+	c.Wait()
 }
 
 func (r *RateYourMusic) SendRating(rating string, id string) {
-	c := colly.NewCollector()
+	c := createCrawler(r.Delay)
 
 	formRequest := map[string][]byte{
 		"type":          []byte("l"),
@@ -367,15 +394,16 @@ func (r *RateYourMusic) SendRating(rating string, id string) {
 	})
 
 	c.PostMultipart("https://rateyourmusic.com/httprequest/CatalogSetRating", formRequest)
+	c.Wait()
 }
 
-func (r *RateYourMusic) GetListChoices() []string {
+func (r *RateYourMusic) ListChoices() []string {
 	if r.Cookies != nil {
 		return append(listMenuDefaultChoices, "Set rating")
 	}
 	return listMenuDefaultChoices
 }
 
-func (r *RateYourMusic) GetAdditionalFunctions() map[int]interface{} {
+func (r *RateYourMusic) AdditionalFunctions() map[int]interface{} {
 	return map[int]interface{}{3: r.SendRating}
 }
