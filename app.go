@@ -94,7 +94,6 @@ func app(s scraper.Scraper) {
 func main() {
 	website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
 	rymCredits := flag.Bool("credits", false, "Display RYM credits")
-	rymDelay := flag.Int("delay", 1, "Set value of random delay for RYM. Set to 0 to disable.")
 	flag.Parse()
 	if len(flag.Args()) == 0 {
 		os.Exit(1)
@@ -110,18 +109,32 @@ func main() {
 		fmt.Println("Cannot determine config folder")
 		os.Exit(1)
 	}
-	loginFilePath := filepath.Join(configFolder, "musicScraper", ".login.json")
+	configFilePath := filepath.Join(configFolder, "musicScraper", "config.json")
 
 	if *website == "metallum" {
 		app(&scraper.Metallum{Link: search})
-	} else {
+	}
+	if *website == "rym" {
 		r := &scraper.RateYourMusic{}
 		r.Link = search
 		r.GetCredits = *rymCredits
-		r.Delay = *rymDelay
-		r.Login(loginFilePath)
-		if r.Cookies != nil {
-			r.DownloadUserData()
+		config, _ := scraper.ReadUserConfiguration(configFilePath)
+		r.Delay = config.Delay
+		if config.Authenticate {
+			cacheFolder, err := os.UserCacheDir()
+			if err != nil {
+				fmt.Println("Cannot determine cache folder")
+				os.Exit(1)
+			}
+			cookieFilePath := filepath.Join(cacheFolder, "musicScraper", "cookie.json")
+			if _, err := os.Stat(cookieFilePath); os.IsNotExist(err) {
+				r.Login()
+				if config.SaveCookies {
+					scraper.SaveCookie(r.Cookies, cookieFilePath)
+				}
+			} else {
+				r.Cookies, _ = scraper.ReadCookie(cookieFilePath)
+			}
 		}
 		app(r)
 	}

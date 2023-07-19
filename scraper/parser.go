@@ -1,67 +1,94 @@
 package scraper
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
+	"path/filepath"
+	"strings"
+	"syscall"
 
-	"github.com/gocarina/gocsv"
+	"golang.org/x/term"
 )
 
-type RYMRating struct {
-	RYMAlbumId string `csv:"RYM Album"`
-	Rating     string `csv:"Rating"`
+type ConfigData struct {
+	Delay        int  `json:"request_delay"`
+	Authenticate bool `json:"authenticate"`
+	SaveCookies  bool `json:"save_cookies"`
 }
 
-type LoginData struct {
-	User     string `json:"user"`
-	Password string `json:"password"`
+type RYMCookie map[string]string
+
+type JsonData interface {
+	ConfigData | RYMCookie
 }
 
-type RYMCookie struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+func ReadUserConfiguration(path string) (ConfigData, error) {
+	return readJsonFile[ConfigData](path)
 }
 
-func readRYMRatings(payload []byte) map[int]int {
-	data := make([]RYMRating, 0)
-	gocsv.SetCSVReader(func(in io.Reader) gocsv.CSVReader {
-		return gocsv.LazyCSVReader(in) // Allows use of quotes in CSV
-	})
-	if err := gocsv.UnmarshalBytes(payload, &data); err != nil {
-		fmt.Println("Error in leading ratings: ", err)
-		os.Exit(1)
+func credentials() (string, string, error) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Println("Cookie file not found. Authentication is required.")
+	fmt.Print("Enter Username: ")
+	username, err := reader.ReadString('\n')
+	if err != nil {
+		return "", "", err
 	}
-	ratings := make(map[int]int)
-	for _, d := range data {
-		if id, err := strconv.Atoi(d.RYMAlbumId); err != nil {
-			panic(err)
-		} else if rating, err := strconv.Atoi(d.Rating); err != nil {
-			panic(err)
-		} else {
-			ratings[id] = rating
-		}
+
+	fmt.Print("Enter Password: ")
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return "", "", err
 	}
-	return ratings
+
+	password := string(bytePassword)
+	return strings.TrimSpace(username), strings.TrimSpace(password), nil
 }
 
-func readUserLoginData(path string) (string, string, error) {
+func readJsonFile[D JsonData](path string) (D, error) {
+	var configData D
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		fmt.Println("No login file found in " + path + ". Skipped user authentication")
-		return "", "", errors.New("No file")
+		return configData, errors.New("No file")
 	}
-	loginFile, err := ioutil.ReadFile(path)
+	configFile, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic("Error when opening file: ")
 	}
-	var loginData LoginData
-	err = json.Unmarshal(loginFile, &loginData)
+	err = json.Unmarshal(configFile, &configData)
 	if err != nil {
 		panic(err)
 	}
-	return loginData.User, loginData.Password, nil
+	return configData, nil
+}
+
+func ReadCookie(path string) (map[string]string, error) {
+	return readJsonFile[RYMCookie](path)
+}
+
+func SaveCookie(cookies map[string]string, path string) {
+	dir := filepath.Dir(path)
+
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		err := os.MkdirAll(dir, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	as_json, err := json.MarshalIndent(cookies, "", "\t")
+	if err != nil {
+		panic(err)
+	}
+	f.Write(as_json)
 }

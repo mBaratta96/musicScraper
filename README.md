@@ -19,19 +19,28 @@ Archives), with nice album ASCII art.
 
 Clone the repo and build the package with `go build`, with Go version >= 1.18. Put the binary file in `~/.local/bin`.
 
-To list your RYM album rating, download your profile data and save it in the
-`.config/musicScrapper` folder as `user_albums_export.csv`.
 
-To set a rating in RYM, you'll have to provide your authentication data. Create
-a `.login.json` file in `~/.config/musicScraper` and write this simple login file:
+Optionally, create a `config.json` file in `~/.config/musicScraper` and write:
 
 ```json 
-{ 
-    "user": "yourRYMusername",
-    "password": "yourRYMPassword"
+{
+    "request_delay": 1,
+    "authenticate": true,
+    "save_cookies": true
 }
-
 ```
+
+- `request_delay` allows you to slow down the web scraper, by setting the random
+  delay interval (in seconds) between calls. It is highly recommended to set it
+  between 1 and 5, since RateYourMusic may block your IP address if the calls are
+  too fast. However, you can set it at 0 to disable it.
+
+- `autheticate` at `true` will make the app ask you for RYM username and password,
+  you will be able to see and set your album ratings.
+
+- `save_cookies` will save a copy of your RYM cookies in the `~/.cache/musicScraper`
+  folder. If disabled, the app will always ask for username and password each time
+  `authenticate` is `true`.
 
 ```shell
 
@@ -39,8 +48,6 @@ musicScraper [OPTIONS] "name_of_artist"
 
 -credits
         Display RYM credits
--delay int
-        Set value of random delay for RYM (default 1). Set to 0 to disable.
 -website string
         Desired Website ('metallum' or 'rym')
 ```

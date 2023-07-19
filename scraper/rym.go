@@ -6,11 +6,8 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"strconv"
 	"strings"
 	"time"
-
-	//"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
@@ -38,7 +35,6 @@ var (
 type RateYourMusic struct {
 	Delay      int
 	Link       string
-	Ratings    map[int]int
 	Cookies    map[string]string
 	GetCredits bool
 }
@@ -48,7 +44,7 @@ type AlbumTable struct {
 	Section string
 }
 
-func createCrawler(delay int) *colly.Collector {
+func createCrawler(delay int, cookies map[string]string) *colly.Collector {
 	c := colly.NewCollector(
 		colly.Async(true),
 		colly.UserAgent(
@@ -61,42 +57,29 @@ func createCrawler(delay int) *colly.Collector {
 			RandomDelay: time.Duration(delay) * time.Second,
 		})
 	}
+	if cookies != nil {
+		c.OnRequest(func(r *colly.Request) {
+			r.Headers.Set("Cookie", createCookieHeader(cookies))
+		})
+	}
 	return c
 }
 
-func getVote(divId string, ratings map[int]int) string {
-	if len(ratings) == 0 {
-		return ""
+func createCookieHeader(cookies map[string]string) string {
+	cookieString := make([]string, 0)
+	for cookieName, cookieValue := range cookies {
+		cookieString = append(cookieString, fmt.Sprintf("%s=%s", cookieName, cookieValue))
 	}
-	splitted := strings.Split(divId, "_")
-	isListened := false
-	var vote int
-	if releaseId, err := strconv.Atoi(splitted[len(splitted)-1]); err == nil {
-		if rating, ok := ratings[releaseId]; ok {
-			isListened = true
-			vote = rating
-		}
-	} else {
-		panic(err)
-	}
-	gradedVote := ""
-	if isListened {
-		gradedVote = fmt.Sprintf("%.1f", float32(vote)/2)
-	}
-	return gradedVote
+	return strings.Join(cookieString, "; ")
 }
 
 func getAlbumListDiscography(
+	c *colly.Collector,
 	data *ScrapedData,
-	link string,
 	tableQuery string,
 	albumTables []AlbumTable,
 	hasBio bool,
-	userRatings map[int]int,
-	delay int,
 ) {
-	c := createCrawler(delay)
-
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
 		data.Metadata["Top Album"] = h.Text
 	})
@@ -111,7 +94,7 @@ func getAlbumListDiscography(
 	c.OnHTML(tableQuery, func(h *colly.HTMLElement) {
 		for _, albumTable := range albumTables {
 			h.ForEach(albumTable.Query, func(_ int, h *colly.HTMLElement) {
-				gradedVote := getVote(h.Attr("id"), userRatings)
+				rating := h.ChildText("div.disco_expandcat span.disco_cat_inner")
 				title := h.ChildText("div.disco_info a.album")
 				year := h.ChildText("div.disco_info span[class*='disco_year']")
 				reviews := h.ChildText("div.disco_reviews")
@@ -123,20 +106,17 @@ func getAlbumListDiscography(
 				}
 				data.Rows = append(
 					data.Rows,
-					[]string{recommended, title, year, reviews, ratings, average, albumTable.Section, gradedVote},
+					[]string{recommended, title, year, reviews, ratings, average, albumTable.Section, rating},
 				)
 				data.Links = append(data.Links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
 			})
 		}
 	})
-
-	c.Visit(link)
-	c.Wait()
 }
 
 func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 	data.Links = make([]string, 0)
-	c := createCrawler(r.Delay)
+	c := createCrawler(r.Delay, r.Cookies)
 
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
 		band_link := DOMAIN + h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
@@ -180,12 +160,15 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 		hasBio = true
 		visitLink = r.Link
 	}
-	getAlbumListDiscography(data, visitLink, tableQuery, albumTables, hasBio, r.Ratings, r.Delay)
+	c := createCrawler(r.Delay, r.Cookies)
+	getAlbumListDiscography(c, data, tableQuery, albumTables, hasBio)
+	c.Visit(visitLink)
+	c.Wait()
 	return rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:]
 }
 
 func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
-	c := createCrawler(r.Delay)
+	c := createCrawler(r.Delay, r.Cookies)
 	data.Metadata = make(map[string]string)
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
@@ -211,15 +194,8 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 		}
 	})
 	c.OnHTML("div.album_title > input.album_shortcut", func(h *colly.HTMLElement) {
-		if len(r.Ratings) > 0 {
-			albumId := h.Attr("value")
-			if id, err := strconv.Atoi(albumId[6 : len(albumId)-1]); err == nil {
-				data.Metadata["ID"] = fmt.Sprintf("%d", id)
-				if rating, ok := r.Ratings[id]; ok {
-					data.Metadata["Vote"] = fmt.Sprintf("%.1f", float32(rating)/2)
-				}
-			}
-		}
+		albumId := h.Attr("value")
+		data.Metadata["ID"] = albumId[6 : len(albumId)-1]
 	})
 
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
@@ -250,7 +226,7 @@ func (r *RateYourMusic) SetLink(link string) {
 }
 
 func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
-	c := createCrawler(r.Delay)
+	c := createCrawler(r.Delay, r.Cookies)
 	data.Links = make([]string, 0)
 
 	c.OnHTML("span.navspan a.navlinknext", func(h *colly.HTMLElement) {
@@ -275,7 +251,7 @@ func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
 }
 
 func (r *RateYourMusic) Credits() map[string]string {
-	c := createCrawler(r.Delay)
+	c := createCrawler(r.Delay, r.Cookies)
 	credits := make(map[string]string)
 
 	c.OnHTML("div.section_credits > ul.credits", func(h *colly.HTMLElement) {
@@ -299,10 +275,10 @@ func (r *RateYourMusic) Credits() map[string]string {
 	return credits
 }
 
-func (r *RateYourMusic) Login(path string) {
-	user, password, err := readUserLoginData(path)
+func (r *RateYourMusic) Login() {
+	user, password, err := credentials()
 	if err != nil {
-		return
+		panic(err)
 	}
 	formRequest := map[string][]byte{
 		"user":             []byte(user),
@@ -313,7 +289,7 @@ func (r *RateYourMusic) Login(path string) {
 		"action":           []byte("Login"),
 	}
 	r.Cookies = make(map[string]string)
-	c := createCrawler(r.Delay)
+	c := createCrawler(r.Delay, r.Cookies)
 
 	c.OnError(func(_ *colly.Response, err error) {
 		fmt.Println("Something went wrong:", err)
@@ -331,47 +307,8 @@ func (r *RateYourMusic) Login(path string) {
 	c.Wait()
 }
 
-func createCookieHeader(cookies map[string]string) string {
-	cookieString := make([]string, 0)
-	for cookieName, cookieValue := range cookies {
-		cookieString = append(cookieString, fmt.Sprintf("%s=%s", cookieName, cookieValue))
-	}
-	return strings.Join(cookieString, "; ")
-}
-
-func (r *RateYourMusic) DownloadUserData() {
-	var userId string
-	c := createCrawler(r.Delay)
-
-	c.OnHTML("div.bubble_header.profile_header ", func(h *colly.HTMLElement) {
-		headerText := strings.Fields(h.Text)
-		for _, text := range headerText {
-			if strings.HasPrefix(text, "#") {
-				userId = text[1:]
-			}
-		}
-		h.Request.Visit(USERDATA + userId + "&noreview")
-	})
-
-	c.OnRequest(func(request *colly.Request) {
-		request.Headers.Set("Cookie", createCookieHeader(r.Cookies))
-	})
-	c.OnError(func(_ *colly.Response, err error) {
-		fmt.Println("Something went wrong:", err)
-	})
-	c.OnResponse(func(response *colly.Response) {
-		if response.Headers.Get("content-type") == "text/plain; charset=utf-8" {
-			r.Ratings = readRYMRatings(response.Body)
-		}
-	})
-
-	c.Visit(DOMAIN + "/~" + r.Cookies["username"])
-	c.Wait()
-}
-
 func (r *RateYourMusic) SendRating(rating string, id string) {
-	c := createCrawler(r.Delay)
-
+	c := createCrawler(r.Delay, r.Cookies)
 	formRequest := map[string][]byte{
 		"type":          []byte("l"),
 		"assoc_id":      []byte(id),
@@ -380,10 +317,6 @@ func (r *RateYourMusic) SendRating(rating string, id string) {
 		"rym_ajax_req":  []byte("1"),
 		"request_token": []byte(strings.ReplaceAll(r.Cookies["ulv"], "%2e", ".")),
 	}
-
-	c.OnRequest(func(req *colly.Request) {
-		req.Headers.Set("Cookie", createCookieHeader(r.Cookies))
-	})
 
 	c.OnResponse(func(r *colly.Response) {
 		fmt.Println(r.StatusCode, "Vote has been uploaded.")
