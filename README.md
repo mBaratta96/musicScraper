@@ -19,7 +19,7 @@ Archives), with nice album ASCII art.
 
 Clone the repo and build the package with `go build`, with Go version >= 1.18. Put the binary file in `~/.local/bin`.
 
-Optionally, create a `config.json` file in `~/.congig/musicScraper` and write:
+Optionally, create a `config.json` file in `~/.config/musicScraper` and write:
 
 ```json 
 {
@@ -37,7 +37,7 @@ Optionally, create a `config.json` file in `~/.congig/musicScraper` and write:
 - `autheticate` at `true` will make the app ask you for RYM username and password,
   you will be able to see and set your album ratings.
 
-- `save_cookies` will save a copy of your RYM cookies in the `.cache/musicScraper`
+- `save_cookies` will save a copy of your RYM cookies in the `~/.cache/musicScraper`
   folder. If disabled, the app will always ask for username and password each time
   `authenticate` is `true`.
 
