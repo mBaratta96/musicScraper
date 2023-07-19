@@ -20,13 +20,10 @@ type ConfigData struct {
 	SaveCookies  bool `json:"save_cookies"`
 }
 
-type RYMCookie struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
+type RYMCookie map[string]string
 
 type JsonData interface {
-	ConfigData | []RYMCookie
+	ConfigData | RYMCookie
 }
 
 func ReadUserConfiguration(path string) (ConfigData, error) {
@@ -70,16 +67,8 @@ func readJsonFile[D JsonData](path string) (D, error) {
 	return configData, nil
 }
 
-func ReadCookie(path string) map[string]string {
-	cookies, err := readJsonFile[[]RYMCookie](path)
-	if err != nil {
-		panic(err)
-	}
-	cookieMap := make(map[string]string)
-	for _, cookie := range cookies {
-		cookieMap[cookie.Name] = cookie.Value
-	}
-	return cookieMap
+func ReadCookie(path string) (map[string]string, error) {
+	return readJsonFile[RYMCookie](path)
 }
 
 func SaveCookie(cookies map[string]string, path string) {

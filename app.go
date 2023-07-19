@@ -133,7 +133,7 @@ func main() {
 					scraper.SaveCookie(r.Cookies, cookieFilePath)
 				}
 			} else {
-				r.Cookies = scraper.ReadCookie(cookieFilePath)
+				r.Cookies, _ = scraper.ReadCookie(cookieFilePath)
 			}
 		}
 		app(r)

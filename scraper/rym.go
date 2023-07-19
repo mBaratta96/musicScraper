@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	//"time"
-
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
 )
@@ -65,6 +63,14 @@ func createCrawler(delay int, cookies map[string]string) *colly.Collector {
 		})
 	}
 	return c
+}
+
+func createCookieHeader(cookies map[string]string) string {
+	cookieString := make([]string, 0)
+	for cookieName, cookieValue := range cookies {
+		cookieString = append(cookieString, fmt.Sprintf("%s=%s", cookieName, cookieValue))
+	}
+	return strings.Join(cookieString, "; ")
 }
 
 func getAlbumListDiscography(
@@ -187,6 +193,10 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 			data.Metadata[key] = value
 		}
 	})
+	c.OnHTML("div.album_title > input.album_shortcut", func(h *colly.HTMLElement) {
+		albumId := h.Attr("value")
+		data.Metadata["ID"] = albumId[6 : len(albumId)-1]
+	})
 
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
@@ -295,14 +305,6 @@ func (r *RateYourMusic) Login() {
 
 	c.PostMultipart(LOGIN, formRequest)
 	c.Wait()
-}
-
-func createCookieHeader(cookies map[string]string) string {
-	cookieString := make([]string, 0)
-	for cookieName, cookieValue := range cookies {
-		cookieString = append(cookieString, fmt.Sprintf("%s=%s", cookieName, cookieValue))
-	}
-	return strings.Join(cookieString, "; ")
 }
 
 func (r *RateYourMusic) SendRating(rating string, id string) {
