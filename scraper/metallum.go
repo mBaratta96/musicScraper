@@ -12,6 +12,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
+	"github.com/wk8/go-ordered-map/v2"
 )
 
 type SearchResponse struct {
@@ -39,7 +40,7 @@ type Metallum struct {
 	Link string
 }
 
-func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
+func getMetadata(h *colly.HTMLElement, metadata *orderedmap.OrderedMap[string, string]) {
 	keys, values := []string{}, []string{}
 	h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
 		keys = append(keys, h.Text)
@@ -48,7 +49,7 @@ func getMetadata(h *colly.HTMLElement, metadata map[string]string) {
 		values = append(values, strings.Replace(h.Text, "\n", "", -1))
 	})
 	for i, k := range keys {
-		metadata[k] = values[i]
+		metadata.Set(k, values[i])
 	}
 }
 
@@ -90,7 +91,7 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 func (m *Metallum) AlbumList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
-	data.Metadata = make(map[string]string)
+	data.Metadata = orderedmap.New[string, string]()
 
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
@@ -117,7 +118,7 @@ func (m *Metallum) AlbumList(data *ScrapedData) ([]int, []string) {
 func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
-	data.Metadata = make(map[string]string)
+	data.Metadata = orderedmap.New[string, string]()
 
 	c.OnHTML("div#album_tabs_tracklist tr.even, div#album_tabs_tracklist tr.odd", func(h *colly.HTMLElement) {
 		var row [4]string
@@ -189,14 +190,14 @@ func (m *Metallum) ReviewsList(data *ScrapedData) ([]int, []string) {
 	return mReviewColumnWidths[:], mReviewColumnTitles[:]
 }
 
-func (m *Metallum) Credits() map[string]string {
+func (m *Metallum) Credits() *orderedmap.OrderedMap[string, string] {
 	c := colly.NewCollector()
-	credits := make(map[string]string)
+	credits := orderedmap.New[string, string]()
 
 	c.OnHTML("div#album_members_lineup table.lineupTable > tbody > tr.lineupRow", func(h *colly.HTMLElement) {
 		artist := h.ChildText("td:has(a)")
 		credit := h.ChildText("td:not(:has(a))")
-		credits[artist] = credit
+		credits.Set(artist, credit)
 	})
 
 	c.Visit(m.Link)

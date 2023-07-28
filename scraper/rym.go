@@ -11,6 +11,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
+	"github.com/wk8/go-ordered-map/v2"
 )
 
 const (
@@ -81,13 +82,13 @@ func getAlbumListDiscography(
 	hasBio bool,
 ) {
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
-		data.Metadata["Top Album"] = h.Text
+		data.Metadata.Set("Top Album", h.Text)
 	})
 	if hasBio {
 		c.OnHTML(
 			"div#column_container_right div.section_artist_biography > span.rendered_text",
 			func(h *colly.HTMLElement) {
-				data.Metadata["Biography"] = h.Text
+				data.Metadata.Set("Biography", h.Text)
 			})
 	}
 
@@ -141,7 +142,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	var hasBio bool
 	var visitLink string
 	data.Links = make([]string, 0)
-	data.Metadata = make(map[string]string)
+	data.Metadata = orderedmap.New[string, string]()
 
 	if r.GetCredits {
 		albumTables = []AlbumTable{{Query: "div.disco_search_results > div.disco_release", Section: "Credits"}}
@@ -169,7 +170,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 
 func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 	c := createCrawler(r.Delay, r.Cookies)
-	data.Metadata = make(map[string]string)
+	data.Metadata = orderedmap.New[string, string]()
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
 		image_url := h.ChildAttr("img", "src")
@@ -190,19 +191,19 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 		key := h.ChildText("th")
 		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
 		if key != "Share" {
-			data.Metadata[key] = value
+			data.Metadata.Set(key, value)
 		}
 	})
 	c.OnHTML("div.album_title > input.album_shortcut", func(h *colly.HTMLElement) {
 		albumId := h.Attr("value")
-		data.Metadata["ID"] = albumId[6 : len(albumId)-1]
+		data.Metadata.Set("ID", albumId[6:len(albumId)-1])
 	})
 
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
 			if len(h.ChildText("span.tracklist_total")) > 0 {
 				value := strings.Fields(h.ChildText("span.tracklist_total"))
-				data.Metadata["Total Length"] = value[len(value)-1]
+				data.Metadata.Set("Total Length", value[len(value)-1])
 			} else {
 				number := h.ChildText("span.tracklist_num")
 				title := h.ChildText("span[itemprop=name] span.rendered_text")
@@ -250,9 +251,9 @@ func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
 	return rReviewColumnWidths[:], rReviewColumnTitles[:]
 }
 
-func (r *RateYourMusic) Credits() map[string]string {
+func (r *RateYourMusic) Credits() *orderedmap.OrderedMap[string, string] {
 	c := createCrawler(r.Delay, r.Cookies)
-	credits := make(map[string]string)
+	credits := orderedmap.New[string, string]()
 
 	c.OnHTML("div.section_credits > ul.credits", func(h *colly.HTMLElement) {
 		h.ForEach("li[class!='expand_button']:not([style='display:none;'])", func(_ int, h *colly.HTMLElement) {
@@ -266,7 +267,7 @@ func (r *RateYourMusic) Credits() map[string]string {
 					credit = append(credit, strings.ToUpper(s.Text()[:1])+s.Text()[1:])
 				})
 			})
-			credits[artist] = strings.Join(credit, ", ")
+			credits.Set(artist, strings.Join(credit, ", "))
 		})
 	})
 
