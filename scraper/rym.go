@@ -276,19 +276,21 @@ func (r *RateYourMusic) Credits() *orderedmap.OrderedMap[string, string] {
 	return credits
 }
 
+var loginForm = map[string][]byte{
+	"remember":         []byte("false"),
+	"maintain_session": []byte("true"),
+	"rym_ajax_req":     []byte("1"),
+	"action":           []byte("Login"),
+}
+
 func (r *RateYourMusic) Login() {
 	user, password, err := credentials()
 	if err != nil {
 		panic(err)
 	}
-	formRequest := map[string][]byte{
-		"user":             []byte(user),
-		"password":         []byte(password),
-		"remember":         []byte("false"),
-		"maintain_session": []byte("true"),
-		"rym_ajax_req":     []byte("1"),
-		"action":           []byte("Login"),
-	}
+	loginForm["user"] = []byte(user)
+	loginForm["password"] = []byte(password)
+
 	r.Cookies = make(map[string]string)
 	c := createCrawler(r.Delay, r.Cookies)
 
@@ -304,20 +306,21 @@ func (r *RateYourMusic) Login() {
 		}
 	})
 
-	c.PostMultipart(LOGIN, formRequest)
+	c.PostMultipart(LOGIN, loginForm)
 	c.Wait()
+}
+
+var ratingForm = map[string][]byte{
+	"rym_ajax_req": []byte("1"),
+	"action":       []byte("CatalogSetRating"),
+	"type":         []byte("l"),
 }
 
 func (r *RateYourMusic) SendRating(rating string, id string) {
 	c := createCrawler(r.Delay, r.Cookies)
-	formRequest := map[string][]byte{
-		"type":          []byte("l"),
-		"assoc_id":      []byte(id),
-		"rating":        []byte(rating),
-		"action":        []byte("CatalogSetRating"),
-		"rym_ajax_req":  []byte("1"),
-		"request_token": []byte(strings.ReplaceAll(r.Cookies["ulv"], "%2e", ".")),
-	}
+	ratingForm["assoc_id"] = []byte(id)
+	ratingForm["rating"] = []byte(rating)
+	ratingForm["request_token"] = []byte(strings.ReplaceAll(r.Cookies["ulv"], "%2e", "."))
 
 	c.OnResponse(func(r *colly.Response) {
 		fmt.Println(r.StatusCode, "Vote has been uploaded.")
@@ -327,7 +330,7 @@ func (r *RateYourMusic) SendRating(rating string, id string) {
 		fmt.Println("Something went wrong:", err)
 	})
 
-	c.PostMultipart("https://rateyourmusic.com/httprequest/CatalogSetRating", formRequest)
+	c.PostMultipart("https://rateyourmusic.com/httprequest/CatalogSetRating", ratingForm)
 	c.Wait()
 }
 
