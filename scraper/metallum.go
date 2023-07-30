@@ -16,11 +16,7 @@ import (
 )
 
 type SearchResponse struct {
-	Error                string     `json:"error"`
-	ITotalRecords        int        `json:"iTotalRecords"`
-	ITotalDisplayRecords int        `json:"iTotalDisplayRecords"`
-	SEcho                int        `json:"sEcho"`
-	AaData               [][]string `json:"aaData"`
+	AaData [][]string `json:"aaData"`
 }
 
 const METALLUMSTYLECOLOR string = "#b57614"

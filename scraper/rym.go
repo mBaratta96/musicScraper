@@ -20,6 +20,7 @@ const (
 	LOGIN         string = "https://rateyourmusic.com/httprequest/Login"
 	RATING        string = "https://rateyourmusic.com/httprequest/CatalogSetRating"
 	USERDATA      string = "https://rateyourmusic.com/user_albums_export?album_list_id="
+	USERAGENT     string = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
 )
 
 var (
@@ -46,11 +47,7 @@ type AlbumTable struct {
 }
 
 func createCrawler(delay int, cookies map[string]string) *colly.Collector {
-	c := colly.NewCollector(
-		colly.Async(true),
-		colly.UserAgent(
-			"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0",
-		))
+	c := colly.NewCollector(colly.Async(true), colly.UserAgent(USERAGENT))
 	if delay > 0 {
 		c.Limit(&colly.LimitRule{
 			DomainGlob:  "*",
@@ -105,10 +102,8 @@ func getAlbumListDiscography(
 				if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
 					recommended = ""
 				}
-				data.Rows = append(
-					data.Rows,
-					[]string{recommended, title, year, reviews, ratings, average, albumTable.Section, rating},
-				)
+				row := []string{recommended, title, year, reviews, ratings, average, albumTable.Section, rating}
+				data.Rows = append(data.Rows, row)
 				data.Links = append(data.Links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
 			})
 		}
