@@ -11,6 +11,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
+	"github.com/wk8/go-ordered-map/v2"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 	LOGIN         string = "https://rateyourmusic.com/httprequest/Login"
 	RATING        string = "https://rateyourmusic.com/httprequest/CatalogSetRating"
 	USERDATA      string = "https://rateyourmusic.com/user_albums_export?album_list_id="
+	USERAGENT     string = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
 )
 
 var (
@@ -45,11 +47,7 @@ type AlbumTable struct {
 }
 
 func createCrawler(delay int, cookies map[string]string) *colly.Collector {
-	c := colly.NewCollector(
-		colly.Async(true),
-		colly.UserAgent(
-			"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0",
-		))
+	c := colly.NewCollector(colly.Async(true), colly.UserAgent(USERAGENT))
 	if delay > 0 {
 		c.Limit(&colly.LimitRule{
 			DomainGlob:  "*",
@@ -81,13 +79,13 @@ func getAlbumListDiscography(
 	hasBio bool,
 ) {
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
-		data.Metadata["Top Album"] = h.Text
+		data.Metadata.Set("Top Album", h.Text)
 	})
 	if hasBio {
 		c.OnHTML(
 			"div#column_container_right div.section_artist_biography > span.rendered_text",
 			func(h *colly.HTMLElement) {
-				data.Metadata["Biography"] = h.Text
+				data.Metadata.Set("Biography", h.Text)
 			})
 	}
 
@@ -104,10 +102,8 @@ func getAlbumListDiscography(
 				if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
 					recommended = ""
 				}
-				data.Rows = append(
-					data.Rows,
-					[]string{recommended, title, year, reviews, ratings, average, albumTable.Section, rating},
-				)
+				row := []string{recommended, title, year, reviews, ratings, average, albumTable.Section, rating}
+				data.Rows = append(data.Rows, row)
 				data.Links = append(data.Links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
 			})
 		}
@@ -141,7 +137,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	var hasBio bool
 	var visitLink string
 	data.Links = make([]string, 0)
-	data.Metadata = make(map[string]string)
+	data.Metadata = orderedmap.New[string, string]()
 
 	if r.GetCredits {
 		albumTables = []AlbumTable{{Query: "div.disco_search_results > div.disco_release", Section: "Credits"}}
@@ -169,7 +165,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 
 func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 	c := createCrawler(r.Delay, r.Cookies)
-	data.Metadata = make(map[string]string)
+	data.Metadata = orderedmap.New[string, string]()
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
 		image_url := h.ChildAttr("img", "src")
@@ -190,19 +186,19 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 		key := h.ChildText("th")
 		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
 		if key != "Share" {
-			data.Metadata[key] = value
+			data.Metadata.Set(key, value)
 		}
 	})
 	c.OnHTML("div.album_title > input.album_shortcut", func(h *colly.HTMLElement) {
 		albumId := h.Attr("value")
-		data.Metadata["ID"] = albumId[6 : len(albumId)-1]
+		data.Metadata.Set("ID", albumId[6:len(albumId)-1])
 	})
 
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
 			if len(h.ChildText("span.tracklist_total")) > 0 {
 				value := strings.Fields(h.ChildText("span.tracklist_total"))
-				data.Metadata["Total Length"] = value[len(value)-1]
+				data.Metadata.Set("Total Length", value[len(value)-1])
 			} else {
 				number := h.ChildText("span.tracklist_num")
 				title := h.ChildText("span[itemprop=name] span.rendered_text")
@@ -250,9 +246,9 @@ func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
 	return rReviewColumnWidths[:], rReviewColumnTitles[:]
 }
 
-func (r *RateYourMusic) Credits() map[string]string {
+func (r *RateYourMusic) Credits() *orderedmap.OrderedMap[string, string] {
 	c := createCrawler(r.Delay, r.Cookies)
-	credits := make(map[string]string)
+	credits := orderedmap.New[string, string]()
 
 	c.OnHTML("div.section_credits > ul.credits", func(h *colly.HTMLElement) {
 		h.ForEach("li[class!='expand_button']:not([style='display:none;'])", func(_ int, h *colly.HTMLElement) {
@@ -266,7 +262,7 @@ func (r *RateYourMusic) Credits() map[string]string {
 					credit = append(credit, strings.ToUpper(s.Text()[:1])+s.Text()[1:])
 				})
 			})
-			credits[artist] = strings.Join(credit, ", ")
+			credits.Set(artist, strings.Join(credit, ", "))
 		})
 	})
 
@@ -275,19 +271,21 @@ func (r *RateYourMusic) Credits() map[string]string {
 	return credits
 }
 
+var loginForm = map[string][]byte{
+	"remember":         []byte("false"),
+	"maintain_session": []byte("true"),
+	"rym_ajax_req":     []byte("1"),
+	"action":           []byte("Login"),
+}
+
 func (r *RateYourMusic) Login() {
 	user, password, err := credentials()
 	if err != nil {
 		panic(err)
 	}
-	formRequest := map[string][]byte{
-		"user":             []byte(user),
-		"password":         []byte(password),
-		"remember":         []byte("false"),
-		"maintain_session": []byte("true"),
-		"rym_ajax_req":     []byte("1"),
-		"action":           []byte("Login"),
-	}
+	loginForm["user"] = []byte(user)
+	loginForm["password"] = []byte(password)
+
 	r.Cookies = make(map[string]string)
 	c := createCrawler(r.Delay, r.Cookies)
 
@@ -303,20 +301,21 @@ func (r *RateYourMusic) Login() {
 		}
 	})
 
-	c.PostMultipart(LOGIN, formRequest)
+	c.PostMultipart(LOGIN, loginForm)
 	c.Wait()
+}
+
+var ratingForm = map[string][]byte{
+	"rym_ajax_req": []byte("1"),
+	"action":       []byte("CatalogSetRating"),
+	"type":         []byte("l"),
 }
 
 func (r *RateYourMusic) SendRating(rating string, id string) {
 	c := createCrawler(r.Delay, r.Cookies)
-	formRequest := map[string][]byte{
-		"type":          []byte("l"),
-		"assoc_id":      []byte(id),
-		"rating":        []byte(rating),
-		"action":        []byte("CatalogSetRating"),
-		"rym_ajax_req":  []byte("1"),
-		"request_token": []byte(strings.ReplaceAll(r.Cookies["ulv"], "%2e", ".")),
-	}
+	ratingForm["assoc_id"] = []byte(id)
+	ratingForm["rating"] = []byte(rating)
+	ratingForm["request_token"] = []byte(strings.ReplaceAll(r.Cookies["ulv"], "%2e", "."))
 
 	c.OnResponse(func(r *colly.Response) {
 		fmt.Println(r.StatusCode, "Vote has been uploaded.")
@@ -326,7 +325,7 @@ func (r *RateYourMusic) SendRating(rating string, id string) {
 		fmt.Println("Something went wrong:", err)
 	})
 
-	c.PostMultipart("https://rateyourmusic.com/httprequest/CatalogSetRating", formRequest)
+	c.PostMultipart("https://rateyourmusic.com/httprequest/CatalogSetRating", ratingForm)
 	c.Wait()
 }
 

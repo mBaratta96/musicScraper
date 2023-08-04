@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"scraper"
 	"strconv"
+
+	"github.com/wk8/go-ordered-map/v2"
 )
 
 func checkIndex(index int) int {
@@ -30,7 +32,7 @@ func app(s scraper.Scraper) {
 	data = scraper.ScrapeData(s.AlbumList)
 	for true {
 		cli.CallClear()
-		cli.PrintMap(data.Metadata, s.StyleColor())
+		cli.PrintMap(s.StyleColor(), data.Metadata)
 		index = checkIndex(cli.PrintTable(data.Rows, data.Columns.Title, data.Columns.Width))
 		s.SetLink(data.Links[index])
 		albumData := scraper.ScrapeData(s.Album)
@@ -38,7 +40,7 @@ func app(s scraper.Scraper) {
 		if albumData.Image != nil {
 			cli.PrintImage(albumData.Image)
 		}
-		cli.PrintMap(albumData.Metadata, s.StyleColor())
+		cli.PrintMap(s.StyleColor(), albumData.Metadata)
 		cli.PrintLink(data.Links[index])
 		_ = checkIndex(cli.PrintTable(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
 		listIndex := checkIndex(cli.PrintList(s.ListChoices()))
@@ -47,7 +49,7 @@ func app(s scraper.Scraper) {
 		}
 		gotCredits := false
 		gotReviews := false
-		var creditsData map[string]string
+		var creditsData *orderedmap.OrderedMap[string, string]
 		var reviewData scraper.ScrapedData
 		for true {
 			switch listIndex {
@@ -56,7 +58,7 @@ func app(s scraper.Scraper) {
 					creditsData = s.Credits()
 					gotCredits = true
 				}
-				cli.PrintMap(creditsData, s.StyleColor())
+				cli.PrintMap(s.StyleColor(), creditsData)
 
 			case 2:
 				if !gotReviews {
@@ -81,7 +83,8 @@ func app(s scraper.Scraper) {
 					}
 					fmt.Println("Wrong rating value")
 				}
-				s.AdditionalFunctions()[3].(func(string, string))(rating, albumData.Metadata["ID"])
+				id, _ := albumData.Metadata.Get("ID")
+				s.AdditionalFunctions()[3].(func(string, string))(rating, id)
 			}
 			listIndex = checkIndex(cli.PrintList(s.ListChoices()))
 			if listIndex == 0 {

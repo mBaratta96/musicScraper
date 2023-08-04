@@ -12,6 +12,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/qeesung/image2ascii/convert"
+	"github.com/wk8/go-ordered-map/v2"
 	"golang.org/x/term"
 )
 
@@ -48,13 +49,14 @@ func PrintLink(link string) {
 }
 
 // use utf8 for non-English alphabets
-func PrintMap(metadata map[string]string, color string) {
+func PrintMap(color string, metadata *orderedmap.OrderedMap[string, string]) {
 	w, _, e := term.GetSize(0)
 	if e != nil {
 		panic(e)
 	}
 	maxKeyLength := 0
-	for k := range metadata {
+	for pair := metadata.Oldest(); pair != nil; pair = pair.Next() {
+		k := pair.Key
 		if utf8.RuneCountInString(k) > maxKeyLength {
 			maxKeyLength = utf8.RuneCountInString(k)
 		}
@@ -62,7 +64,9 @@ func PrintMap(metadata map[string]string, color string) {
 	maxKeyLength += 4
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
 	valueSpace := w - maxKeyLength
-	for key, value := range metadata {
+	for pair := metadata.Oldest(); pair != nil; pair = pair.Next() {
+		key := pair.Key
+		value := pair.Value
 		if len(value) > valueSpace {
 			fmt.Printf("%s%s", style.Render(key), strings.Repeat(" ", maxKeyLength-utf8.RuneCountInString(key)))
 			words := strings.Fields(value)

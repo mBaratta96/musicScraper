@@ -2,6 +2,8 @@ package scraper
 
 import (
 	"image"
+
+	"github.com/wk8/go-ordered-map/v2"
 )
 
 type ColumnData struct {
@@ -14,7 +16,7 @@ type ScrapedData struct {
 	Columns ColumnData
 	// optionals
 	Links    []string
-	Metadata map[string]string
+	Metadata *orderedmap.OrderedMap[string, string]
 	Image    image.Image
 }
 
@@ -23,7 +25,7 @@ type Scraper interface {
 	AlbumList(*ScrapedData) ([]int, []string)
 	Album(*ScrapedData) ([]int, []string)
 	ReviewsList(*ScrapedData) ([]int, []string)
-	Credits() map[string]string
+	Credits() *orderedmap.OrderedMap[string, string]
 	StyleColor() string
 	SetLink(string)
 	ListChoices() []string
