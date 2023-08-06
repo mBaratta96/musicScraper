@@ -12,6 +12,8 @@ import (
 	"github.com/wk8/go-ordered-map/v2"
 )
 
+var gotData = map[string]bool{"Credits": false, "Reviews": false, "Similar": false}
+
 func checkIndex(index int) int {
 	if index == -1 {
 		os.Exit(0)
@@ -50,23 +52,22 @@ func app(s scraper.Scraper) {
 		if listIndex == "Go back" {
 			continue
 		}
-		gotCredits := false
-		gotReviews := false
 		var creditsData *orderedmap.OrderedMap[string, string]
 		var reviewData scraper.ScrapedData
+		var similData scraper.ScrapedData
 		for true {
 			switch listIndex {
 			case "Show credits":
-				if !gotCredits {
+				if !gotData["Credits"] {
 					creditsData = s.Credits()
-					gotCredits = true
+					gotData["Credits"] = true
 				}
 				cli.PrintMap(s.StyleColor(), creditsData)
 
 			case "Show reviews":
-				if !gotReviews {
+				if !gotData["Reviews"] {
 					reviewData = scraper.ScrapeData(s.ReviewsList)
-					gotReviews = true
+					gotData["Reviews"] = true
 				}
 				reviewIndex := checkIndex(
 					cli.PrintTable(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
@@ -89,11 +90,14 @@ func app(s scraper.Scraper) {
 				id, _ := albumData.Metadata.Get("ID")
 				s.AdditionalFunctions()["Set rating"].(func(string, string))(rating, id)
 			case "Get similar artists":
-				id, _ := albumData.Metadata.Get("ID")
-				s.SetLink(fmt.Sprintf("https://www.metal-archives.com/band/ajax-recommendations/id/%s", id))
-				similData := scraper.ScrapeData(
-					s.AdditionalFunctions()["Get similar artists"].(func(*scraper.ScrapedData) ([]int, []string)),
-				)
+				if !gotData["Similar"] {
+					id, _ := albumData.Metadata.Get("ID")
+					s.SetLink(fmt.Sprintf("https://www.metal-archives.com/band/ajax-recommendations/id/%s", id))
+					similData = scraper.ScrapeData(
+						s.AdditionalFunctions()["Get similar artists"].(func(*scraper.ScrapedData) ([]int, []string)),
+					)
+					gotData["Similar"] = true
+				}
 				checkIndex(cli.PrintTable(similData.Rows, similData.Columns.Title, similData.Columns.Width))
 			}
 			listIndex = cli.PrintList(s.ListChoices())
