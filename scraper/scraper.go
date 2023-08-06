@@ -29,7 +29,7 @@ type Scraper interface {
 	StyleColor() string
 	SetLink(string)
 	ListChoices() []string
-	AdditionalFunctions() map[int]interface{}
+	AdditionalFunctions() map[string]interface{}
 }
 
 var listMenuDefaultChoices = []string{"Go back", "Show credits", "Show reviews"}

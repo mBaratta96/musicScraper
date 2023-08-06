@@ -43,8 +43,11 @@ func app(s scraper.Scraper) {
 		cli.PrintMap(s.StyleColor(), albumData.Metadata)
 		cli.PrintLink(data.Links[index])
 		_ = checkIndex(cli.PrintTable(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
-		listIndex := checkIndex(cli.PrintList(s.ListChoices()))
-		if listIndex == 0 {
+		listIndex := cli.PrintList(s.ListChoices())
+		if listIndex == "Exit" {
+			os.Exit(0)
+		}
+		if listIndex == "Go back" {
 			continue
 		}
 		gotCredits := false
@@ -53,14 +56,14 @@ func app(s scraper.Scraper) {
 		var reviewData scraper.ScrapedData
 		for true {
 			switch listIndex {
-			case 1:
+			case "Show credits":
 				if !gotCredits {
 					creditsData = s.Credits()
 					gotCredits = true
 				}
 				cli.PrintMap(s.StyleColor(), creditsData)
 
-			case 2:
+			case "Show reviews":
 				if !gotReviews {
 					reviewData = scraper.ScrapeData(s.ReviewsList)
 					gotReviews = true
@@ -69,7 +72,7 @@ func app(s scraper.Scraper) {
 					cli.PrintTable(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
 				)
 				cli.PrintReview(reviewData.Links[reviewIndex])
-			case 3:
+			case "Set rating":
 				var rating string
 				for true {
 					fmt.Println("Insert rating (0 to 10):")
@@ -84,10 +87,20 @@ func app(s scraper.Scraper) {
 					fmt.Println("Wrong rating value")
 				}
 				id, _ := albumData.Metadata.Get("ID")
-				s.AdditionalFunctions()[3].(func(string, string))(rating, id)
+				s.AdditionalFunctions()["Set rating"].(func(string, string))(rating, id)
+			case "Get similar artists":
+				id, _ := albumData.Metadata.Get("ID")
+				s.SetLink(fmt.Sprintf("https://www.metal-archives.com/band/ajax-recommendations/id/%s", id))
+				similData := scraper.ScrapeData(
+					s.AdditionalFunctions()["Get similar artists"].(func(*scraper.ScrapedData) ([]int, []string)),
+				)
+				checkIndex(cli.PrintTable(similData.Rows, similData.Columns.Title, similData.Columns.Width))
 			}
-			listIndex = checkIndex(cli.PrintList(s.ListChoices()))
-			if listIndex == 0 {
+			listIndex = cli.PrintList(s.ListChoices())
+			if listIndex == "Exit" {
+				os.Exit(0)
+			}
+			if listIndex == "Go back" {
 				break
 			}
 		}

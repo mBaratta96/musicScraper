@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"path"
 	"strings"
 
 	_ "image/jpeg"
@@ -22,14 +23,16 @@ type SearchResponse struct {
 const METALLUMSTYLECOLOR string = "#b57614"
 
 var (
-	mBandColumnTitles      = [3]string{"Band Name", "Genre", "Country"}
-	mBandColumnWidths      = [3]int{64, 64, 32}
-	mAlbumlistColumnTitles = [4]string{"Name", "Type", "Year", "Reviews"}
-	mAlbumlistColumnWidths = [4]int{64, 16, 4, 8}
-	mAlbumColumnTitles     = [4]string{"N.", "Title", "Duration", "Lyric"}
-	mAlbumColumnWidths     = [4]int{4, 64, 8, 16}
-	mReviewColumnTitles    = [4]string{"Title", "Rating", "User", "Date"}
-	mReviewColumnWidths    = [4]int{32, 7, 32, 32}
+	mBandColTitles          = [3]string{"Band Name", "Genre", "Country"}
+	mBandColWidths          = [3]int{64, 64, 32}
+	mAlbumlistColTitles     = [4]string{"Name", "Type", "Year", "Reviews"}
+	mAlbumlistColWidths     = [4]int{64, 16, 4, 8}
+	mAlbumColTitles         = [4]string{"N.", "Title", "Duration", "Lyric"}
+	mAlbumColWidths         = [4]int{4, 64, 8, 16}
+	mReviewColTitles        = [4]string{"Title", "Rating", "User", "Date"}
+	mReviewColWidths        = [4]int{32, 7, 32, 32}
+	mSimilarArtistColTitles = [4]string{"Name", "Country", "Genre", "Score"}
+	mSimilarArtistColWidths = [4]int{64, 32, 64, 4}
 )
 
 type Metallum struct {
@@ -81,7 +84,7 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Link))
-	return mBandColumnWidths[:], mAlbumColumnTitles[:]
+	return mBandColWidths[:], mAlbumColTitles[:]
 }
 
 func (m *Metallum) AlbumList(data *ScrapedData) ([]int, []string) {
@@ -108,7 +111,7 @@ func (m *Metallum) AlbumList(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.Visit(m.Link)
-	return mAlbumlistColumnWidths[:], mAlbumlistColumnTitles[:]
+	return mAlbumlistColWidths[:], mAlbumlistColTitles[:]
 }
 
 func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
@@ -122,6 +125,10 @@ func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
 			row[i] = h.Text
 		})
 		data.Rows = append(data.Rows, row[:])
+	})
+
+	c.OnHTML("h2.band_name > a", func(h *colly.HTMLElement) {
+		data.Metadata.Set("ID", path.Base(h.Attr("href")))
 	})
 
 	c.OnHTML("a#cover.image", func(h *colly.HTMLElement) {
@@ -144,7 +151,7 @@ func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.Visit(m.Link)
-	return mAlbumColumnWidths[:], mAlbumColumnTitles[:]
+	return mAlbumColWidths[:], mAlbumColTitles[:]
 }
 
 func (m *Metallum) StyleColor() string {
@@ -183,7 +190,7 @@ func (m *Metallum) ReviewsList(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.Visit(m.Link)
-	return mReviewColumnWidths[:], mReviewColumnTitles[:]
+	return mReviewColWidths[:], mReviewColTitles[:]
 }
 
 func (m *Metallum) Credits() *orderedmap.OrderedMap[string, string] {
@@ -200,10 +207,29 @@ func (m *Metallum) Credits() *orderedmap.OrderedMap[string, string] {
 	return credits
 }
 
-func (m *Metallum) ListChoices() []string {
-	return listMenuDefaultChoices
+func (m *Metallum) SimilarArtists(data *ScrapedData) ([]int, []string) {
+	c := colly.NewCollector()
+	data.Links = make([]string, 0)
+
+	c.OnHTML("table#artist_list tbody tr[id*='recRow']", func(h *colly.HTMLElement) {
+		var row [4]string
+		h.ForEach("td", func(i int, h *colly.HTMLElement) {
+			row[i] = h.Text
+			if i == 0 {
+				data.Links = append(data.Links, h.Attr("href"))
+			}
+		})
+		data.Rows = append(data.Rows, row[:])
+	})
+
+	c.Visit(m.Link)
+	return mSimilarArtistColWidths[:], mSimilarArtistColTitles[:]
 }
 
-func (m *Metallum) AdditionalFunctions() map[int]interface{} {
-	return map[int]interface{}{}
+func (m *Metallum) ListChoices() []string {
+	return append(listMenuDefaultChoices, "Get similar artists")
+}
+
+func (m *Metallum) AdditionalFunctions() map[string]interface{} {
+	return map[string]interface{}{"Get similar artists": m.SimilarArtists}
 }

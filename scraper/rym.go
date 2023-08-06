@@ -25,14 +25,14 @@ const (
 )
 
 var (
-	rBandColumnTitles      = [3]string{"Band Name", "Genre", "Country"}
-	rBandColumnWidths      = [3]int{64, 64, 32}
-	rAlbumlistColumnTitles = [8]string{"Rec.", "Title", "Year", "Reviews", "Ratings", "Average", "Type", "Vote"}
-	rAlbumlistColumnWidths = [8]int{4, 64, 4, 7, 7, 7, 12, 5}
-	rAlbumColumnTitles     = [3]string{"N.", "Title", "Duration"}
-	rAlbumColumnWidths     = [3]int{4, 64, 8}
-	rReviewColumnTitles    = [3]string{"User", "Date", "Rating"}
-	rReviewColumnWidths    = [3]int{64, 16, 7}
+	rBandColTitles      = [3]string{"Band Name", "Genre", "Country"}
+	rBandColWidths      = [3]int{64, 64, 32}
+	rAlbumlistColTitles = [8]string{"Rec.", "Title", "Year", "Reviews", "Ratings", "Average", "Type", "Vote"}
+	rAlbumlistColWidths = [8]int{4, 64, 4, 7, 7, 7, 12, 5}
+	rAlbumColTitles     = [3]string{"N.", "Title", "Duration"}
+	rAlbumColWidths     = [3]int{4, 64, 8}
+	rReviewColTitles    = [3]string{"User", "Date", "Rating"}
+	rReviewColWidths    = [3]int{64, 16, 7}
 )
 
 type RateYourMusic struct {
@@ -129,7 +129,7 @@ func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 
 	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", url.PathEscape(r.Link)))
 	c.Wait()
-	return rBandColumnWidths[:], rBandColumnTitles[:]
+	return rBandColWidths[:], rBandColTitles[:]
 }
 
 func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
@@ -161,7 +161,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	getAlbumListDiscography(c, data, tableQuery, albumTables, hasBio)
 	c.Visit(visitLink)
 	c.Wait()
-	return rAlbumlistColumnWidths[:], rAlbumlistColumnTitles[:]
+	return rAlbumlistColWidths[:], rAlbumlistColTitles[:]
 }
 
 func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
@@ -211,7 +211,7 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 
 	c.Visit(r.Link)
 	c.Wait()
-	return rAlbumColumnWidths[:], rAlbumColumnTitles[:]
+	return rAlbumColWidths[:], rAlbumColTitles[:]
 }
 
 func (r *RateYourMusic) StyleColor() string {
@@ -243,7 +243,7 @@ func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
 
 	c.Visit(r.Link + "reviews/1")
 	c.Wait()
-	return rReviewColumnWidths[:], rReviewColumnTitles[:]
+	return rReviewColWidths[:], rReviewColTitles[:]
 }
 
 func (r *RateYourMusic) Credits() *orderedmap.OrderedMap[string, string] {
@@ -339,6 +339,6 @@ func (r *RateYourMusic) ListChoices() []string {
 	return listMenuDefaultChoices
 }
 
-func (r *RateYourMusic) AdditionalFunctions() map[int]interface{} {
-	return map[int]interface{}{3: r.SendRating}
+func (r *RateYourMusic) AdditionalFunctions() map[string]interface{} {
+	return map[string]interface{}{"Set rating": r.SendRating}
 }
