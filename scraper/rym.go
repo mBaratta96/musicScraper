@@ -52,7 +52,7 @@ func createCrawler(delay int, cookies map[string]string) *colly.Collector {
 	if delay > 0 {
 		c.Limit(&colly.LimitRule{
 			DomainGlob:  "*",
-			Parallelism: 2,
+			Parallelism: 4,
 			RandomDelay: time.Duration(delay) * time.Second,
 		})
 	}
@@ -185,7 +185,7 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
 		key := h.ChildText("th")
-		value := strings.Join(strings.Fields(strings.Replace(h.ChildText("td"), "\n", "", -1)), " ")
+		value := strings.Join(strings.Fields(strings.ReplaceAll(h.ChildText("td"), "\n", "")), " ")
 		if key != "Share" {
 			data.Metadata.Set(key, value)
 		}
@@ -231,11 +231,10 @@ func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
 	})
 
 	c.OnHTML("div.review > div.review_header ", func(h *colly.HTMLElement) {
-		var row [3]string
-		row[0] = h.ChildText("span.review_user")
-		row[1] = h.ChildText("span.review_date")
-		row[2] = strings.Split(h.ChildAttr("span.review_rating > img", "alt"), " ")[0]
-		data.Rows = append(data.Rows, row[:])
+		user := h.ChildText("span.review_user")
+		date := h.ChildText("span.review_date")
+		rating := strings.Split(h.ChildAttr("span.review_rating > img", "alt"), " ")[0]
+		data.Rows = append(data.Rows, []string{user, date, rating})
 	})
 
 	c.OnHTML("div.review > div.review_body ", func(h *colly.HTMLElement) {

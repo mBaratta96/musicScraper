@@ -59,7 +59,7 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 			fmt.Println("Can not unmarshal JSON")
 		}
 		for _, el := range response.AaData {
-			var row [3]string
+			var band, genre, country string
 			for i, node := range el {
 				switch i {
 				case 0:
@@ -67,16 +67,16 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 					if err != nil {
 						fmt.Println("Error on response")
 					}
-					band := doc.Find("a").First()
-					row[0] = band.Text()
-					data.Links = append(data.Links, band.AttrOr("href", ""))
+					bandLink := doc.Find("a").First()
+					band = bandLink.Text()
+					data.Links = append(data.Links, bandLink.AttrOr("href", ""))
 				case 1:
-					row[1] = node
+					genre = node
 				case 2:
-					row[2] = node
+					country = node
 				}
 			}
-			data.Rows = append(data.Rows, row[:])
+			data.Rows = append(data.Rows, []string{band, genre, country})
 		}
 	})
 
