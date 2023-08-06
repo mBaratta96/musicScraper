@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -56,7 +55,7 @@ func readJsonFile[D JsonData](path string) (D, error) {
 		fmt.Println("No login file found in " + path + ". Skipped user authentication")
 		return configData, errors.New("No file")
 	}
-	configFile, err := ioutil.ReadFile(path)
+	configFile, err := os.ReadFile(path)
 	if err != nil {
 		panic("Error when opening file: ")
 	}

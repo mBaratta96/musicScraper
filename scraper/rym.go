@@ -6,6 +6,7 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"net/url"
 	"strings"
 	"time"
 
@@ -126,7 +127,7 @@ func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 		data.Rows = append(data.Rows, []string{band_name, strings.Join(genres, "/"), country})
 	})
 
-	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", strings.Replace(r.Link, " ", "%20", -1)))
+	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", url.PathEscape(r.Link)))
 	c.Wait()
 	return rBandColumnWidths[:], rBandColumnTitles[:]
 }
@@ -313,9 +314,12 @@ var ratingForm = map[string][]byte{
 
 func (r *RateYourMusic) SendRating(rating string, id string) {
 	c := createCrawler(r.Delay, r.Cookies)
+
 	ratingForm["assoc_id"] = []byte(id)
 	ratingForm["rating"] = []byte(rating)
-	ratingForm["request_token"] = []byte(strings.ReplaceAll(r.Cookies["ulv"], "%2e", "."))
+	if token, err := url.PathUnescape(r.Cookies["ulv"]); err == nil {
+		ratingForm["request_token"] = []byte(token)
+	}
 
 	c.OnResponse(func(r *colly.Response) {
 		fmt.Println(r.StatusCode, "Vote has been uploaded.")
