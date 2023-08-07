@@ -72,8 +72,8 @@ func createCrawler(delay int, cookies map[string]string) *colly.Collector {
 
 func createCookieHeader(cookies map[string]string) string {
 	cookieString := make([]string, 0)
-	for cookieName, cookieValue := range cookies {
-		cookieString = append(cookieString, fmt.Sprintf("%s=%s", cookieName, cookieValue))
+	for name, value := range cookies {
+		cookieString = append(cookieString, fmt.Sprintf("%s=%s", name, value))
 	}
 	return strings.Join(cookieString, "; ")
 }

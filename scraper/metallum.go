@@ -61,24 +61,17 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 		if err := json.Unmarshal(r.Body, &response); err != nil {
 			fmt.Println("Can not unmarshal JSON")
 		}
+
 		for _, el := range response.AaData {
-			var band, genre, country string
-			for i, node := range el {
-				switch i {
-				case 0:
-					doc, err := goquery.NewDocumentFromReader(strings.NewReader(node))
-					if err != nil {
-						fmt.Println("Error on response")
-					}
-					bandLink := doc.Find("a").First()
-					band = bandLink.Text()
-					data.Links = append(data.Links, bandLink.AttrOr("href", ""))
-				case 1:
-					genre = node
-				case 2:
-					country = node
-				}
+			doc, err := goquery.NewDocumentFromReader(strings.NewReader(el[0]))
+			if err != nil {
+				fmt.Println("Error on response")
 			}
+			bandLink := doc.Find("a").First()
+			band := bandLink.Text()
+			data.Links = append(data.Links, bandLink.AttrOr("href", ""))
+			genre := el[1]
+			country := el[2]
 			data.Rows = append(data.Rows, []string{band, genre, country})
 		}
 	})
@@ -168,15 +161,13 @@ func (m *Metallum) ReviewsList(data *ScrapedData) ([]int, []string) {
 
 	c.OnHTML("div#album_tabs_reviews tr.even, div#album_tabs_reviews tr.odd", func(h *colly.HTMLElement) {
 		var row [4]string
-		var link string
 		i := 0
 		h.ForEach("td", func(_ int, h *colly.HTMLElement) {
 			if len(h.Attr("nowrap")) == 0 {
 				row[i] = h.Text
 				i += 1
 			} else {
-				link = h.ChildAttrs("a", "href")[0]
-				h.Request.Visit(link)
+				h.Request.Visit(h.ChildAttrs("a", "href")[0])
 			}
 		})
 		data.Rows = append(data.Rows, row[:])
@@ -222,7 +213,7 @@ func (m *Metallum) similarArtists(data *ScrapedData) ([]int, []string) {
 		data.Rows = append(data.Rows, row[:])
 	})
 
-	c.OnScraped(func(_ *colly.Response) {
+	c.OnScraped(func(_ *colly.Response) { // This makes len(data.Rown) = len(data.Links) + 1 (see app.go)
 		data.Rows = append(data.Rows, []string{"Go back to choices", "", "", ""})
 	})
 
