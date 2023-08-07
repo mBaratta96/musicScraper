@@ -87,10 +87,8 @@ func app(s scraper.Scraper) {
 					if _, err := fmt.Scanln(&rating); err != nil {
 						panic(err)
 					}
-					if i, err := strconv.Atoi(rating); err == nil {
-						if i >= 0 && i <= 10 {
-							break
-						}
+					if i, err := strconv.Atoi(rating); err == nil && i >= 0 && i <= 10 {
+						break
 					}
 					fmt.Println("Wrong rating value")
 				}
