@@ -42,9 +42,15 @@ type RateYourMusic struct {
 	GetCredits bool
 }
 
-type AlbumTable struct {
-	Query   string
-	Section string
+type albumTable struct {
+	query   string
+	section string
+}
+
+type albumQuery struct {
+	tableQuery  string
+	albumTables []albumTable
+	hasBio      bool
 }
 
 func createCrawler(delay int, cookies map[string]string) *colly.Collector {
@@ -72,17 +78,11 @@ func createCookieHeader(cookies map[string]string) string {
 	return strings.Join(cookieString, "; ")
 }
 
-func getAlbumListDiscography(
-	c *colly.Collector,
-	data *ScrapedData,
-	tableQuery string,
-	albumTables []AlbumTable,
-	hasBio bool,
-) {
+func getAlbumListDiscography(c *colly.Collector, data *ScrapedData, query albumQuery) {
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
 		data.Metadata.Set("Top Album", h.Text)
 	})
-	if hasBio {
+	if query.hasBio {
 		c.OnHTML(
 			"div#column_container_right div.section_artist_biography > span.rendered_text",
 			func(h *colly.HTMLElement) {
@@ -90,9 +90,9 @@ func getAlbumListDiscography(
 			})
 	}
 
-	c.OnHTML(tableQuery, func(h *colly.HTMLElement) {
-		for _, albumTable := range albumTables {
-			h.ForEach(albumTable.Query, func(_ int, h *colly.HTMLElement) {
+	c.OnHTML(query.tableQuery, func(h *colly.HTMLElement) {
+		for _, albumTable := range query.albumTables {
+			h.ForEach(albumTable.query, func(_ int, h *colly.HTMLElement) {
 				rating := h.ChildText("div.disco_expandcat span.disco_cat_inner")
 				title := h.ChildText("div.disco_info a.album")
 				year := h.ChildText("div.disco_info span[class*='disco_year']")
@@ -103,7 +103,7 @@ func getAlbumListDiscography(
 				if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
 					recommended = ""
 				}
-				row := []string{recommended, title, year, reviews, ratings, average, albumTable.Section, rating}
+				row := []string{recommended, title, year, reviews, ratings, average, albumTable.section, rating}
 				data.Rows = append(data.Rows, row)
 				data.Links = append(data.Links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
 			})
@@ -133,32 +133,34 @@ func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 }
 
 func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
-	var albumTables []AlbumTable
-	var tableQuery string
-	var hasBio bool
+	var query albumQuery
 	var visitLink string
 	data.Links = make([]string, 0)
 	data.Metadata = orderedmap.New[string, string]()
 
 	if r.GetCredits {
-		albumTables = []AlbumTable{{Query: "div.disco_search_results > div.disco_release", Section: "Credits"}}
-		tableQuery = "div#column_container_left div.release_credits"
-		hasBio = false
+		query = albumQuery{
+			albumTables: []albumTable{{query: "div.disco_search_results > div.disco_release", section: "Credits"}},
+			tableQuery:  "div#column_container_left div.release_credits",
+			hasBio:      false,
+		}
 		visitLink = r.Link + "/credits"
 	} else {
-		albumTables = []AlbumTable{
-			{Query: "div#disco_type_s > div.disco_release", Section: "Album"},
-			{Query: "div#disco_type_l > div.disco_release", Section: "Live Album"},
-			{Query: "div#disco_type_e > div.disco_release", Section: "EP"},
-			{Query: "div#disco_type_a > div.disco_release", Section: "Appears On"},
-			{Query: "div#disco_type_c > div.disco_release", Section: "Compilation"},
+		query = albumQuery{
+			albumTables: []albumTable{
+				{query: "div#disco_type_s > div.disco_release", section: "Album"},
+				{query: "div#disco_type_l > div.disco_release", section: "Live Album"},
+				{query: "div#disco_type_e > div.disco_release", section: "EP"},
+				{query: "div#disco_type_a > div.disco_release", section: "Appears On"},
+				{query: "div#disco_type_c > div.disco_release", section: "Compilation"},
+			},
+			tableQuery: "div#column_container_left div#discography",
+			hasBio:     true,
 		}
-		tableQuery = "div#column_container_left div#discography"
-		hasBio = true
 		visitLink = r.Link
 	}
 	c := createCrawler(r.Delay, r.Cookies)
-	getAlbumListDiscography(c, data, tableQuery, albumTables, hasBio)
+	getAlbumListDiscography(c, data, query)
 	c.Visit(visitLink)
 	c.Wait()
 	return rAlbumlistColWidths[:], rAlbumlistColTitles[:]
@@ -311,7 +313,7 @@ var ratingForm = map[string][]byte{
 	"type":         []byte("l"),
 }
 
-func (r *RateYourMusic) SendRating(rating string, id string) {
+func (r *RateYourMusic) sendRating(rating string, id string) {
 	c := createCrawler(r.Delay, r.Cookies)
 
 	ratingForm["assoc_id"] = []byte(id)
@@ -340,5 +342,5 @@ func (r *RateYourMusic) ListChoices() []string {
 }
 
 func (r *RateYourMusic) AdditionalFunctions() map[string]interface{} {
-	return map[string]interface{}{"Set rating": r.SendRating}
+	return map[string]interface{}{"Set rating": r.sendRating}
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/wk8/go-ordered-map/v2"
 )
 
-type SearchResponse struct {
+type searchResponse struct {
 	AaData [][]string `json:"aaData"`
 }
 
@@ -57,7 +57,7 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 	data.Links = make([]string, 0)
 
 	c.OnResponse(func(r *colly.Response) {
-		var response SearchResponse
+		var response searchResponse
 		if err := json.Unmarshal(r.Body, &response); err != nil {
 			fmt.Println("Can not unmarshal JSON")
 		}
@@ -207,7 +207,7 @@ func (m *Metallum) Credits() *orderedmap.OrderedMap[string, string] {
 	return credits
 }
 
-func (m *Metallum) SimilarArtists(data *ScrapedData) ([]int, []string) {
+func (m *Metallum) similarArtists(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
 
@@ -231,5 +231,5 @@ func (m *Metallum) ListChoices() []string {
 }
 
 func (m *Metallum) AdditionalFunctions() map[string]interface{} {
-	return map[string]interface{}{"Get similar artists": m.SimilarArtists}
+	return map[string]interface{}{"Get similar artists": m.similarArtists}
 }

@@ -34,9 +34,9 @@ type Scraper interface {
 
 var listMenuDefaultChoices = []string{"Go back", "Show credits", "Show reviews"}
 
-type TableConstructor func(*ScrapedData) ([]int, []string)
+type tableConstructor func(*ScrapedData) ([]int, []string)
 
-func ScrapeData(method TableConstructor) ScrapedData {
+func ScrapeData(method tableConstructor) ScrapedData {
 	data := ScrapedData{}
 	data.Rows = make([][]string, 0)
 	colWidths, colTitles := method(&data)
