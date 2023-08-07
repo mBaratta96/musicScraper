@@ -216,10 +216,14 @@ func (m *Metallum) similarArtists(data *ScrapedData) ([]int, []string) {
 		h.ForEach("td", func(i int, h *colly.HTMLElement) {
 			row[i] = h.Text
 			if i == 0 {
-				data.Links = append(data.Links, h.Attr("href"))
+				data.Links = append(data.Links, h.ChildAttr("a", "href"))
 			}
 		})
 		data.Rows = append(data.Rows, row[:])
+	})
+
+	c.OnScraped(func(_ *colly.Response) {
+		data.Rows = append(data.Rows, []string{"Go back to choices", "", "", ""})
 	})
 
 	c.Visit(m.Link)

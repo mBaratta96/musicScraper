@@ -12,7 +12,11 @@ import (
 	"github.com/wk8/go-ordered-map/v2"
 )
 
-var gotData = map[string]bool{"Credits": false, "Reviews": false, "Similar": false}
+type gotData struct {
+	credits bool
+	reviews bool
+	similar bool
+}
 
 func checkIndex(index int) int {
 	if index == -1 {
@@ -45,34 +49,37 @@ func app(s scraper.Scraper) {
 		cli.PrintMap(s.StyleColor(), albumData.Metadata)
 		cli.PrintLink(data.Links[index])
 		_ = checkIndex(cli.PrintTable(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
-		listIndex := cli.PrintList(s.ListChoices())
-		if listIndex == "Exit" {
-			os.Exit(0)
-		}
-		if listIndex == "Go back" {
-			continue
-		}
 		var creditsData *orderedmap.OrderedMap[string, string]
 		var reviewData scraper.ScrapedData
 		var similData scraper.ScrapedData
+		var flags gotData = gotData{}
 		for true {
+			listIndex := cli.PrintList(s.ListChoices())
+			if listIndex == "Exit" {
+				os.Exit(0)
+			}
+			goingBack := false
 			switch listIndex {
+			case "Go back":
+				goingBack = true
 			case "Show credits":
-				if !gotData["Credits"] {
+				if !flags.credits {
 					creditsData = s.Credits()
-					gotData["Credits"] = true
+					flags.credits = true
 				}
 				cli.PrintMap(s.StyleColor(), creditsData)
 
 			case "Show reviews":
-				if !gotData["Reviews"] {
+				if !flags.reviews {
 					reviewData = scraper.ScrapeData(s.ReviewsList)
-					gotData["Reviews"] = true
+					flags.reviews = true
 				}
 				reviewIndex := checkIndex(
 					cli.PrintTable(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
 				)
-				cli.PrintReview(reviewData.Links[reviewIndex])
+				if len(reviewData.Links) > 0 {
+					cli.PrintReview(reviewData.Links[reviewIndex])
+				}
 			case "Set rating":
 				var rating string
 				for true {
@@ -90,21 +97,24 @@ func app(s scraper.Scraper) {
 				id, _ := albumData.Metadata.Get("ID")
 				s.AdditionalFunctions()["Set rating"].(func(string, string))(rating, id)
 			case "Get similar artists":
-				if !gotData["Similar"] {
+				if !flags.similar {
 					id, _ := albumData.Metadata.Get("ID")
 					s.SetLink(fmt.Sprintf("https://www.metal-archives.com/band/ajax-recommendations/id/%s", id))
 					similData = scraper.ScrapeData(
 						s.AdditionalFunctions()["Get similar artists"].(func(*scraper.ScrapedData) ([]int, []string)),
 					)
-					gotData["Similar"] = true
+					flags.similar = true
 				}
-				checkIndex(cli.PrintTable(similData.Rows, similData.Columns.Title, similData.Columns.Width))
+				similIndex := checkIndex(cli.PrintTable(similData.Rows, similData.Columns.Title, similData.Columns.Width))
+				if similIndex < len(similData.Links) { // go to new artist and start again
+					s.SetLink(similData.Links[similIndex])
+					data = scraper.ScrapeData(s.AlbumList)
+					goingBack = true
+				} else { // get back to current artist and do nothing
+					s.SetLink(data.Links[index])
+				}
 			}
-			listIndex = cli.PrintList(s.ListChoices())
-			if listIndex == "Exit" {
-				os.Exit(0)
-			}
-			if listIndex == "Go back" {
+			if goingBack {
 				break
 			}
 		}
