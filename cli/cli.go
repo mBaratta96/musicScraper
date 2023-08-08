@@ -65,6 +65,9 @@ func PrintMap(color string, metadata *orderedmap.OrderedMap[string, string]) {
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
 	valueSpace := w - maxKeyLength
 	for pair := metadata.Oldest(); pair != nil; pair = pair.Next() {
+		if pair.Key == "ID" {
+			continue
+		}
 		key := pair.Key
 		value := pair.Value
 		if len(value) > valueSpace {

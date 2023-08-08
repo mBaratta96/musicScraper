@@ -12,6 +12,12 @@ import (
 	"github.com/wk8/go-ordered-map/v2"
 )
 
+type gotData struct {
+	credits bool
+	reviews bool
+	similar bool
+}
+
 func checkIndex(index int) int {
 	if index == -1 {
 		os.Exit(0)
@@ -43,51 +49,70 @@ func app(s scraper.Scraper) {
 		cli.PrintMap(s.StyleColor(), albumData.Metadata)
 		cli.PrintLink(data.Links[index])
 		_ = checkIndex(cli.PrintTable(albumData.Rows, albumData.Columns.Title, albumData.Columns.Width))
-		listIndex := checkIndex(cli.PrintList(s.ListChoices()))
-		if listIndex == 0 {
-			continue
-		}
-		gotCredits := false
-		gotReviews := false
 		var creditsData *orderedmap.OrderedMap[string, string]
 		var reviewData scraper.ScrapedData
+		var similData scraper.ScrapedData
+		var flags gotData = gotData{}
 		for true {
+			listIndex := cli.PrintList(s.ListChoices())
+			if listIndex == "Exit" {
+				os.Exit(0)
+			}
+			goingBack := false
 			switch listIndex {
-			case 1:
-				if !gotCredits {
+			case "Go back":
+				goingBack = true
+			case "Show credits":
+				if !flags.credits {
 					creditsData = s.Credits()
-					gotCredits = true
+					flags.credits = true
 				}
 				cli.PrintMap(s.StyleColor(), creditsData)
 
-			case 2:
-				if !gotReviews {
+			case "Show reviews":
+				if !flags.reviews {
 					reviewData = scraper.ScrapeData(s.ReviewsList)
-					gotReviews = true
+					flags.reviews = true
 				}
 				reviewIndex := checkIndex(
 					cli.PrintTable(reviewData.Rows, reviewData.Columns.Title, reviewData.Columns.Width),
 				)
-				cli.PrintReview(reviewData.Links[reviewIndex])
-			case 3:
+				if len(reviewData.Links) > 0 {
+					cli.PrintReview(reviewData.Links[reviewIndex])
+				}
+			case "Set rating":
 				var rating string
 				for true {
 					fmt.Println("Insert rating (0 to 10):")
 					if _, err := fmt.Scanln(&rating); err != nil {
 						panic(err)
 					}
-					if i, err := strconv.Atoi(rating); err == nil {
-						if i >= 0 && i <= 10 {
-							break
-						}
+					if i, err := strconv.Atoi(rating); err == nil && i >= 0 && i <= 10 {
+						break
 					}
 					fmt.Println("Wrong rating value")
 				}
 				id, _ := albumData.Metadata.Get("ID")
-				s.AdditionalFunctions()[3].(func(string, string))(rating, id)
+				s.AdditionalFunctions()["Set rating"].(func(string, string))(rating, id)
+			case "Get similar artists":
+				if !flags.similar {
+					id, _ := albumData.Metadata.Get("ID")
+					s.SetLink(fmt.Sprintf("https://www.metal-archives.com/band/ajax-recommendations/id/%s", id))
+					similData = scraper.ScrapeData(
+						s.AdditionalFunctions()["Get similar artists"].(func(*scraper.ScrapedData) ([]int, []string)),
+					)
+					flags.similar = true
+				}
+				similIndex := checkIndex(cli.PrintTable(similData.Rows, similData.Columns.Title, similData.Columns.Width))
+				if similIndex < len(similData.Links) { // go to new artist and start again
+					s.SetLink(similData.Links[similIndex])
+					data = scraper.ScrapeData(s.AlbumList)
+					goingBack = true
+				} else { // get back to current artist and do nothing
+					s.SetLink(data.Links[index])
+				}
 			}
-			listIndex = checkIndex(cli.PrintList(s.ListChoices()))
-			if listIndex == 0 {
+			if goingBack {
 				break
 			}
 		}

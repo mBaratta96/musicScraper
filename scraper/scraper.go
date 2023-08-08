@@ -29,14 +29,14 @@ type Scraper interface {
 	StyleColor() string
 	SetLink(string)
 	ListChoices() []string
-	AdditionalFunctions() map[int]interface{}
+	AdditionalFunctions() map[string]interface{}
 }
 
 var listMenuDefaultChoices = []string{"Go back", "Show credits", "Show reviews"}
 
-type TableConstructor func(*ScrapedData) ([]int, []string)
+type tableConstructor func(*ScrapedData) ([]int, []string)
 
-func ScrapeData(method TableConstructor) ScrapedData {
+func ScrapeData(method tableConstructor) ScrapedData {
 	data := ScrapedData{}
 	data.Rows = make([][]string, 0)
 	colWidths, colTitles := method(&data)

@@ -85,13 +85,11 @@ func (m listModel) View() string {
 	return "\n" + m.list.View()
 }
 
-func PrintList(choices []string) int {
+func PrintList(choices []string) string {
 	const defaultWidth = 20
 	items := []list.Item{}
-	choiceMap := make(map[string]int)
-	for i, choice := range choices {
+	for _, choice := range choices {
 		items = append(items, item(choice))
-		choiceMap[choice] = i
 	}
 
 	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
@@ -110,12 +108,12 @@ func PrintList(choices []string) int {
 	}
 	if m, ok := m.(listModel); ok {
 		if !m.quitting {
-			return choiceMap[m.choice]
+			return m.choice
 		}
 	} else {
 		fmt.Println("Error in table")
 		os.Exit(1)
 	}
 
-	return -1
+	return "Exit"
 }
