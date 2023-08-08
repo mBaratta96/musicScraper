@@ -13,7 +13,9 @@ Archives), with nice album ASCII art.
 
 - Show user reviews.
 
-- **New RYM feature:** Login and rate an album.
+- **RYM feature:** Login and rate an album.
+
+- **Metallum feature:** Check similar artists.
 
 ## Usage
 
