@@ -7,6 +7,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -43,14 +44,17 @@ type RateYourMusic struct {
 	Expand     bool
 }
 
-type albumTable struct {
-	query   string
+type AlbumTable struct {
 	section string
+	query   string
+	t       rune
+	rows    [][]string
+	links   []string
 }
 
 type albumQuery struct {
 	tableQuery  string
-	albumTables []albumTable
+	albumTables []AlbumTable
 	hasBio      bool
 }
 
@@ -97,24 +101,6 @@ func extractAlbumData(h *colly.HTMLElement, query string, section string, rows *
 	})
 }
 
-func getAlbumListDiscography(c *colly.Collector, data *ScrapedData, query albumQuery) {
-	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
-		data.Metadata.Set("Top Album", h.Text)
-	})
-	if query.hasBio {
-		c.OnHTML(
-			"div#column_container_right div.section_artist_biography > span.rendered_text",
-			func(h *colly.HTMLElement) {
-				data.Metadata.Set("Biography", h.Text)
-			})
-	}
-	c.OnHTML(query.tableQuery, func(h *colly.HTMLElement) {
-		for _, albumTable := range query.albumTables {
-			extractAlbumData(h, albumTable.query, albumTable.section, &data.Rows, &data.Links)
-		}
-	})
-}
-
 func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 	data.Links = make([]string, 0)
 	c := createCrawler(r.Delay, r.Cookies)
@@ -136,6 +122,34 @@ func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 	return rBandColWidths[:], rBandColTitles[:]
 }
 
+var credits albumQuery = albumQuery{
+	albumTables: []AlbumTable{
+		{"Credits", "div.disco_search_results > div.disco_release", 'c', make([][]string, 0), make([]string, 0)},
+	},
+	tableQuery: "div#column_container_left div.release_credits",
+	hasBio:     false,
+}
+
+var mainPage albumQuery = albumQuery{
+	albumTables: []AlbumTable{
+		{"Album", "div#disco_type_s > div.disco_release", 's', make([][]string, 0), make([]string, 0)},
+		{"Live Album", "div#disco_type_l > div.disco_release", 'l', make([][]string, 0), make([]string, 0)},
+		{"EP", "div#disco_type_e > div.disco_release", 'e', make([][]string, 0), make([]string, 0)},
+		{"Appears On", "div#disco_type_a > div.disco_release", 'a', make([][]string, 0), make([]string, 0)},
+		{"Compilation", "div#disco_type_c > div.disco_release", 'c', make([][]string, 0), make([]string, 0)},
+	},
+	tableQuery: "div#column_container_left div#discography",
+	hasBio:     true,
+}
+
+var typeToSection map[rune]string = map[rune]string{
+	's': "Album",
+	'l': "Live Album",
+	'e': "EP",
+	'a': "Appears On",
+	'c': "Compilation",
+}
+
 func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	var query albumQuery
 	var visitLink string
@@ -143,48 +157,47 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	data.Metadata = orderedmap.New[string, string]()
 
 	if r.GetCredits {
-		query = albumQuery{
-			albumTables: []albumTable{{query: "div.disco_search_results > div.disco_release", section: "Credits"}},
-			tableQuery:  "div#column_container_left div.release_credits",
-			hasBio:      false,
-		}
+		query = credits
 		visitLink = r.Link + "/credits"
 	} else {
-		query = albumQuery{
-			albumTables: []albumTable{
-				{query: "div#disco_type_l > div.disco_release", section: "Live Album"},
-				{query: "div#disco_type_e > div.disco_release", section: "EP"},
-				{query: "div#disco_type_a > div.disco_release", section: "Appears On"},
-				{query: "div#disco_type_c > div.disco_release", section: "Compilation"},
-			},
-
-			tableQuery: "div#column_container_left div#discography",
-			hasBio:     true,
-		}
-		if !r.Expand {
-			query.albumTables = append([]albumTable{
-				{query: "div#disco_type_s > div.disco_release", section: "Album"},
-			}, query.albumTables...)
-		}
+		query = mainPage
 		visitLink = r.Link
 	}
 	c := createCrawler(r.Delay, r.Cookies)
-	getAlbumListDiscography(c, data, query)
-	expandForm := map[string][]byte{
-		"sort":             []byte("release_date.a,title.a"),
-		"show_appearances": []byte("false"),
-		"type":             []byte("s"),
-		"action":           []byte("ExpandDiscographySection"),
-		"rym_ajax_req":     []byte("1"),
+	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
+		data.Metadata.Set("Top Album", h.Text)
+	})
+	if query.hasBio {
+		c.OnHTML(
+			"div#column_container_right div.section_artist_biography > span.rendered_text",
+			func(h *colly.HTMLElement) {
+				data.Metadata.Set("Biography", h.Text)
+			})
 	}
-	if r.Expand {
+
+	if !r.Expand || r.GetCredits {
+		c.OnHTML(query.tableQuery, func(h *colly.HTMLElement) {
+			for _, albumTable := range query.albumTables {
+				extractAlbumData(h, albumTable.query, albumTable.section, &albumTable.rows, &albumTable.links)
+			}
+		})
+	} else {
+		expandForm := map[string][]byte{
+			"sort":             []byte("release_date.a,title.a"),
+			"show_appearances": []byte("false"),
+			"action":           []byte("ExpandDiscographySection"),
+			"rym_ajax_req":     []byte("1"),
+		}
 		if token, err := url.PathUnescape(r.Cookies["ulv"]); err == nil {
 			expandForm["request_token"] = []byte(token)
 		}
 		c.OnHTML("div.section_artist_name input.rym_shortcut", func(h *colly.HTMLElement) {
 			artistId := h.Attr("value")
 			expandForm["artist_id"] = []byte(artistId[7 : len(artistId)-1])
-			h.Request.PostMultipart("https://rateyourmusic.com/httprequest/ExpandDiscographySection", expandForm)
+			for _, albumTable := range query.albumTables {
+				expandForm["type"] = []byte(string(albumTable.t))
+				h.Request.PostMultipart("https://rateyourmusic.com/httprequest/ExpandDiscographySection", expandForm)
+			}
 		})
 		c.OnResponse(func(r *colly.Response) {
 			if r.Headers.Get("content-type") == "application/javascript; charset=utf-8" {
@@ -194,22 +207,28 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 				if err != nil {
 					fmt.Println("Error on response")
 				}
-
-				albumSelector := doc.Find("div#disco_type_s")
+				albumType := body[strings.Index(body, "('")+2] // string after javascript function name
+				albumTableIndex := slices.IndexFunc(query.albumTables, func(table AlbumTable) bool {
+					return table.t == rune(albumType)
+				})
+				albumTable := &query.albumTables[albumTableIndex]
+				albumSelector := doc.Find(fmt.Sprintf("div#disco_type_%c", albumType))
 				album := colly.NewHTMLElementFromSelectionNode(r, albumSelector, albumSelector.Get(0), 0)
-				albumRows := make([][]string, 0)
-				albumLinks := make([]string, 0)
-				extractAlbumData(album, "div.disco_release", "Album", &albumRows, &albumLinks)
-				data.Rows = append(albumRows, data.Rows...)
-				data.Links = append(albumLinks, data.Links...)
+				extractAlbumData(album, "div.disco_release", albumTable.section, &albumTable.rows, &albumTable.links)
 			}
 		})
 		c.OnError(func(r *colly.Response, err error) {
 			fmt.Println(err)
 		})
+
 	}
 	c.Visit(visitLink)
 	c.Wait()
+	for _, albumTable := range query.albumTables {
+		fmt.Println(albumTable.links)
+		data.Rows = append(data.Rows, albumTable.rows...)
+		data.Links = append(data.Links, albumTable.links...)
+	}
 	return rAlbumlistColWidths[:], rAlbumlistColTitles[:]
 }
 

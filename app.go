@@ -37,7 +37,7 @@ func app(s scraper.Scraper) {
 	s.SetLink(data.Links[index])
 	data = scraper.ScrapeData(s.AlbumList)
 	for true {
-		// cli.CallClear()
+		cli.CallClear()
 		cli.PrintMap(s.StyleColor(), data.Metadata)
 		index = checkIndex(cli.PrintTable(data.Rows, data.Columns.Title, data.Columns.Width))
 		s.SetLink(data.Links[index])
