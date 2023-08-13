@@ -40,6 +40,7 @@ type RateYourMusic struct {
 	Link       string
 	Cookies    map[string]string
 	GetCredits bool
+	Expand     bool
 }
 
 type albumTable struct {
@@ -161,6 +162,54 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	}
 	c := createCrawler(r.Delay, r.Cookies)
 	getAlbumListDiscography(c, data, query)
+	expandForm := map[string][]byte{
+		"sort":             []byte("release_date.a,title.a"),
+		"show_appearances": []byte("false"),
+		"type":             []byte("s"),
+		"action":           []byte("ExpandDiscographySection"),
+		"rym_ajax_req":     []byte("1"),
+	}
+	if r.Expand {
+		if token, err := url.PathUnescape(r.Cookies["ulv"]); err == nil {
+			expandForm["request_token"] = []byte(token)
+		}
+		c.OnHTML("div.section_artist_name input.rym_shortcut", func(h *colly.HTMLElement) {
+			artistId := h.Attr("value")
+			expandForm["artist_id"] = []byte(artistId[7 : len(artistId)-1])
+			h.Request.PostMultipart("https://rateyourmusic.com/httprequest/ExpandDiscographySection", expandForm)
+		})
+		c.OnResponse(func(r *colly.Response) {
+			if r.Headers.Get("content-type") == "application/javascript; charset=utf-8" {
+				body := string(r.Body)
+				newHTML := body[strings.Index(body, "<div") : len(body)-2]
+				doc, err := goquery.NewDocumentFromReader(strings.NewReader(newHTML))
+				if err != nil {
+					fmt.Println("Error on response")
+				}
+
+				albumSelector := doc.Find("div#disco_type_s")
+				album := colly.NewHTMLElementFromSelectionNode(r, albumSelector, albumSelector.Get(0), 0)
+				album.ForEach("div.disco_release", func(i int, h *colly.HTMLElement) {
+					rating := h.ChildText("div.disco_expandcat span.disco_cat_inner")
+					title := h.ChildText("div.disco_info a.album")
+					year := h.ChildText("div.disco_info span[class*='disco_year']")
+					reviews := h.ChildText("div.disco_reviews")
+					ratings := h.ChildText("div.disco_ratings")
+					average := h.ChildText("div.disco_avg_rating")
+					recommended := ""
+					if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
+						recommended = ""
+					}
+					row := []string{recommended, title, year, reviews, ratings, average, "Exp. Album", rating}
+					data.Rows = append(data.Rows, row)
+					data.Links = append(data.Links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
+				})
+			}
+		})
+		c.OnError(func(r *colly.Response, err error) {
+			fmt.Println(err)
+		})
+	}
 	c.Visit(visitLink)
 	c.Wait()
 	return rAlbumlistColWidths[:], rAlbumlistColTitles[:]
