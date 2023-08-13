@@ -79,6 +79,24 @@ func createCookieHeader(cookies map[string]string) string {
 	return strings.Join(cookieString, "; ")
 }
 
+func extractAlbumData(h *colly.HTMLElement, query string, section string, rows *[][]string, links *[]string) {
+	h.ForEach(query, func(_ int, h *colly.HTMLElement) {
+		rating := h.ChildText("div.disco_expandcat span.disco_cat_inner")
+		title := h.ChildText("div.disco_info a.album")
+		year := h.ChildText("div.disco_info span[class*='disco_year']")
+		reviews := h.ChildText("div.disco_reviews")
+		ratings := h.ChildText("div.disco_ratings")
+		average := h.ChildText("div.disco_avg_rating")
+		recommended := ""
+		if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
+			recommended = ""
+		}
+		row := []string{recommended, title, year, reviews, ratings, average, section, rating}
+		*rows = append(*rows, row)
+		*links = append(*links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
+	})
+}
+
 func getAlbumListDiscography(c *colly.Collector, data *ScrapedData, query albumQuery) {
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
 		data.Metadata.Set("Top Album", h.Text)
@@ -90,24 +108,9 @@ func getAlbumListDiscography(c *colly.Collector, data *ScrapedData, query albumQ
 				data.Metadata.Set("Biography", h.Text)
 			})
 	}
-
 	c.OnHTML(query.tableQuery, func(h *colly.HTMLElement) {
 		for _, albumTable := range query.albumTables {
-			h.ForEach(albumTable.query, func(_ int, h *colly.HTMLElement) {
-				rating := h.ChildText("div.disco_expandcat span.disco_cat_inner")
-				title := h.ChildText("div.disco_info a.album")
-				year := h.ChildText("div.disco_info span[class*='disco_year']")
-				reviews := h.ChildText("div.disco_reviews")
-				ratings := h.ChildText("div.disco_ratings")
-				average := h.ChildText("div.disco_avg_rating")
-				recommended := ""
-				if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
-					recommended = ""
-				}
-				row := []string{recommended, title, year, reviews, ratings, average, albumTable.section, rating}
-				data.Rows = append(data.Rows, row)
-				data.Links = append(data.Links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
-			})
+			extractAlbumData(h, albumTable.query, albumTable.section, &data.Rows, &data.Links)
 		}
 	})
 }
@@ -149,14 +152,19 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	} else {
 		query = albumQuery{
 			albumTables: []albumTable{
-				{query: "div#disco_type_s > div.disco_release", section: "Album"},
 				{query: "div#disco_type_l > div.disco_release", section: "Live Album"},
 				{query: "div#disco_type_e > div.disco_release", section: "EP"},
 				{query: "div#disco_type_a > div.disco_release", section: "Appears On"},
 				{query: "div#disco_type_c > div.disco_release", section: "Compilation"},
 			},
+
 			tableQuery: "div#column_container_left div#discography",
 			hasBio:     true,
+		}
+		if !r.Expand {
+			query.albumTables = append([]albumTable{
+				{query: "div#disco_type_s > div.disco_release", section: "Album"},
+			}, query.albumTables...)
 		}
 		visitLink = r.Link
 	}
@@ -189,21 +197,11 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 
 				albumSelector := doc.Find("div#disco_type_s")
 				album := colly.NewHTMLElementFromSelectionNode(r, albumSelector, albumSelector.Get(0), 0)
-				album.ForEach("div.disco_release", func(i int, h *colly.HTMLElement) {
-					rating := h.ChildText("div.disco_expandcat span.disco_cat_inner")
-					title := h.ChildText("div.disco_info a.album")
-					year := h.ChildText("div.disco_info span[class*='disco_year']")
-					reviews := h.ChildText("div.disco_reviews")
-					ratings := h.ChildText("div.disco_ratings")
-					average := h.ChildText("div.disco_avg_rating")
-					recommended := ""
-					if h.ChildAttr("div.disco_info b.disco_mainline_recommended", "title") == "Recommended" {
-						recommended = ""
-					}
-					row := []string{recommended, title, year, reviews, ratings, average, "Exp. Album", rating}
-					data.Rows = append(data.Rows, row)
-					data.Links = append(data.Links, DOMAIN+h.ChildAttr("div.disco_info > a", "href"))
-				})
+				albumRows := make([][]string, 0)
+				albumLinks := make([]string, 0)
+				extractAlbumData(album, "div.disco_release", "Album", &albumRows, &albumLinks)
+				data.Rows = append(albumRows, data.Rows...)
+				data.Links = append(albumLinks, data.Links...)
 			}
 		})
 		c.OnError(func(r *colly.Response, err error) {
