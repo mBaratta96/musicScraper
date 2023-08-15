@@ -39,6 +39,10 @@ type Metallum struct {
 	Link string
 }
 
+// Metadata contains info like country of origin for band page and label for albums.
+// For reference inspect:
+// https://www.metal-archives.com/bands/Emperor/30
+// https://www.metal-archives.com/albums/Emperor/Anthems_to_the_Welkin_at_Dusk/92
 func getMetadata(h *colly.HTMLElement, metadata *orderedmap.OrderedMap[string, string]) {
 	keys, values := []string{}, []string{}
 	h.ForEach("dt", func(_ int, h *colly.HTMLElement) {
@@ -52,6 +56,8 @@ func getMetadata(h *colly.HTMLElement, metadata *orderedmap.OrderedMap[string, s
 	}
 }
 
+// Metallum search page renders the result of a query from a JSON payload.
+// https://www.metal-archives.com/search?searchString=emperor&type=band_name
 func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
@@ -61,8 +67,9 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 		if err := json.Unmarshal(r.Body, &response); err != nil {
 			fmt.Println("Can not unmarshal JSON")
 		}
-
 		for _, el := range response.AaData {
+			// Search results are contained in the first element of the JSON array as a HTML string.
+			// We parse it and get the data.
 			doc, err := goquery.NewDocumentFromReader(strings.NewReader(el[0]))
 			if err != nil {
 				fmt.Println("Error on response")
@@ -80,15 +87,17 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 	return mBandColWidths[:], mAlbumColTitles[:]
 }
 
+// https://www.metal-archives.com/bands/Emperor/30
 func (m *Metallum) AlbumList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
 	data.Metadata = orderedmap.New[string, string]()
 
+	// Get link to table with all albums
 	c.OnHTML("#band_disco a[href*='all']", func(e *colly.HTMLElement) {
 		e.Request.Visit(e.Attr("href"))
 	})
-
+	// Scrape the table
 	c.OnHTML("table.display.discog tbody tr", func(h *colly.HTMLElement) {
 		var row [4]string
 		h.ForEach(".album,.demo,.other,td a[href]", func(i int, h *colly.HTMLElement) {
@@ -107,6 +116,7 @@ func (m *Metallum) AlbumList(data *ScrapedData) ([]int, []string) {
 	return mAlbumlistColWidths[:], mAlbumlistColTitles[:]
 }
 
+// https://www.metal-archives.com/albums/Emperor/Anthems_to_the_Welkin_at_Dusk/92
 func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
@@ -119,16 +129,14 @@ func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
 		})
 		data.Rows = append(data.Rows, row[:])
 	})
-
+	// Get band id (useful if you want to check similar bands later)
 	c.OnHTML("h2.band_name > a", func(h *colly.HTMLElement) {
 		data.Metadata.Set("ID", path.Base(h.Attr("href")))
 	})
-
 	c.OnHTML("a#cover.image", func(h *colly.HTMLElement) {
 		image_src := h.ChildAttr("img", "src")
 		h.Request.Visit(image_src)
 	})
-
 	c.OnResponse(func(r *colly.Response) {
 		if r.Headers.Get("content-type") == "image/jpeg" {
 			var err error
@@ -138,7 +146,6 @@ func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
 			}
 		}
 	})
-
 	c.OnHTML("dl.float_right,dl.float_left", func(h *colly.HTMLElement) {
 		getMetadata(h, data.Metadata)
 	})
@@ -155,6 +162,7 @@ func (m *Metallum) SetLink(link string) {
 	m.Link = link
 }
 
+// https://www.metal-archives.com/albums/Emperor/Anthems_to_the_Welkin_at_Dusk/92
 func (m *Metallum) ReviewsList(data *ScrapedData) ([]int, []string) {
 	c := colly.NewCollector()
 	data.Links = make([]string, 0)
@@ -172,7 +180,6 @@ func (m *Metallum) ReviewsList(data *ScrapedData) ([]int, []string) {
 		})
 		data.Rows = append(data.Rows, row[:])
 	})
-
 	c.OnHTML("div.reviewBox", func(h *colly.HTMLElement) {
 		review := h.ChildText("h3.reviewTitle") + "\n"
 		review += h.ChildText("div:not([attr_all])") + "\n"
@@ -184,6 +191,7 @@ func (m *Metallum) ReviewsList(data *ScrapedData) ([]int, []string) {
 	return mReviewColWidths[:], mReviewColTitles[:]
 }
 
+// https://www.metal-archives.com/albums/Emperor/Anthems_to_the_Welkin_at_Dusk/92
 func (m *Metallum) Credits() *orderedmap.OrderedMap[string, string] {
 	c := colly.NewCollector()
 	credits := orderedmap.New[string, string]()
@@ -212,8 +220,8 @@ func (m *Metallum) similarArtists(data *ScrapedData) ([]int, []string) {
 		})
 		data.Rows = append(data.Rows, row[:])
 	})
-
-	c.OnScraped(func(_ *colly.Response) { // This makes len(data.Rown) = len(data.Links) + 1 (see app.go)
+	// This makes len(data.Rows) = len(data.Links) + 1 (see app.go)
+	c.OnScraped(func(_ *colly.Response) {
 		data.Rows = append(data.Rows, []string{"Go back to choices", "", "", ""})
 	})
 

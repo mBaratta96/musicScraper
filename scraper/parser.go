@@ -38,13 +38,11 @@ func credentials() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-
 	fmt.Print("Enter Password: ")
 	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return "", "", err
 	}
-
 	password := string(bytePassword)
 	return strings.TrimSpace(username), strings.TrimSpace(password), nil
 }
@@ -84,7 +82,6 @@ func SaveCookie(cookies map[string]string, path string) {
 		panic(err)
 	}
 	defer f.Close()
-
 	as_json, err := json.MarshalIndent(cookies, "", "\t")
 	if err != nil {
 		panic(err)

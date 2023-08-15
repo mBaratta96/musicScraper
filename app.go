@@ -25,6 +25,10 @@ func checkIndex(index int) int {
 	return index
 }
 
+// RYM is the website that requires more configuration (cookies, credits scraping, etc...)
+// However, we still make similar operations for both of the two websites: search an artist,
+// select an artist, select an album, get album data. The similarity of these operation is what led to
+// implement the scraper.Scraper interface.
 func app(s scraper.Scraper) {
 	data := scraper.ScrapeData(s.SearchBand)
 	index := -1
@@ -35,12 +39,14 @@ func app(s scraper.Scraper) {
 	}
 	index = checkIndex(index)
 	s.SetLink(data.Links[index])
+	// Scrape the albums of an artist
 	data = scraper.ScrapeData(s.AlbumList)
 	for true {
 		cli.CallClear()
 		cli.PrintMap(s.StyleColor(), data.Metadata)
 		index = checkIndex(cli.PrintTable(data.Rows, data.Columns.Title, data.Columns.Width))
 		s.SetLink(data.Links[index])
+		// Scrape albm data
 		albumData := scraper.ScrapeData(s.Album)
 		cli.CallClear()
 		if albumData.Image != nil {
@@ -108,7 +114,7 @@ func app(s scraper.Scraper) {
 					s.SetLink(similData.Links[similIndex])
 					data = scraper.ScrapeData(s.AlbumList)
 					goingBack = true
-				} else { // get back to current artist and do nothing
+				} else { // similIndex is the "Go back" option. Get back to current artist and do nothing
 					s.SetLink(data.Links[index])
 				}
 			}
@@ -122,6 +128,7 @@ func app(s scraper.Scraper) {
 func main() {
 	website := flag.String("website", "", "Desired Website ('metallum' or 'rym')")
 	rymCredits := flag.Bool("credits", false, "Display RYM credits")
+	expand := flag.Bool("expand", false, "Expand RYM albums")
 	flag.Parse()
 	if len(flag.Args()) == 0 {
 		os.Exit(1)
@@ -146,6 +153,7 @@ func main() {
 		r := &scraper.RateYourMusic{}
 		r.Link = search
 		r.GetCredits = *rymCredits
+		r.Expand = *expand
 		config, _ := scraper.ReadUserConfiguration(configFilePath)
 		r.Delay = config.Delay
 		if config.Authenticate {
