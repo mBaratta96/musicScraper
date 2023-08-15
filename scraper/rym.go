@@ -47,7 +47,7 @@ type RateYourMusic struct {
 type AlbumTable struct {
 	section string
 	query   string
-	t       rune
+	t       rune // see AlbumList. t defines the type of the album section ('s' for albums, 'e' for EPs, etc...)
 	rows    [][]string
 	links   []string
 }
@@ -58,6 +58,7 @@ type albumQuery struct {
 	hasBio      bool
 }
 
+// RYM requires an async crawler with delay limitation. Otherwise your IP will be banned.
 func createCrawler(delay int, cookies map[string]string) *colly.Collector {
 	c := colly.NewCollector(colly.Async(true), colly.UserAgent(USERAGENT))
 	if delay > 0 {
@@ -101,6 +102,7 @@ func extractAlbumData(h *colly.HTMLElement, query string, section string, rows *
 	})
 }
 
+// https://rateyourmusic.com/search?searchterm=velvet%20underground&searchtype=a
 func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 	data.Links = make([]string, 0)
 	c := createCrawler(r.Delay, r.Cookies)
@@ -122,6 +124,11 @@ func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 	return rBandColWidths[:], rBandColTitles[:]
 }
 
+// In both cases, we are scraping table containing album data. However, the Jquery strings to retrieved the data
+// changes.
+// AlbumTable is a struct for extracting album data from a particular section (Album, EP, credit...)
+// tableQuery defines the wrapper (also a table) of all the tables of a page.
+// hasBio is just to decide if we want to look for the artist's bio (which exists only in the main page).
 var credits albumQuery = albumQuery{
 	albumTables: []AlbumTable{
 		{"Credits", "div.disco_search_results > div.disco_release", 'c', make([][]string, 0), make([]string, 0)},
@@ -142,14 +149,9 @@ var mainPage albumQuery = albumQuery{
 	hasBio:     true,
 }
 
-var typeToSection map[rune]string = map[rune]string{
-	's': "Album",
-	'l': "Live Album",
-	'e': "EP",
-	'a': "Appears On",
-	'c': "Compilation",
-}
-
+// https://rateyourmusic.com/artist/the-velvet-underground
+// https://rateyourmusic.com/artist/the-velvet-underground/credits/
+// r.Expand does what pressing the "showing all" button does. It is applied to all the main artist page section.
 func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	var query albumQuery
 	var visitLink string
@@ -174,10 +176,10 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 				data.Metadata.Set("Biography", h.Text)
 			})
 	}
-
 	if !r.Expand || r.GetCredits {
 		c.OnHTML(query.tableQuery, func(h *colly.HTMLElement) {
-			for _, albumTable := range query.albumTables {
+			for i := range query.albumTables {
+				albumTable := &query.albumTables[i]
 				extractAlbumData(h, albumTable.query, albumTable.section, &albumTable.rows, &albumTable.links)
 			}
 		})
@@ -199,6 +201,8 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 				h.Request.PostMultipart("https://rateyourmusic.com/httprequest/ExpandDiscographySection", expandForm)
 			}
 		})
+		// Body of the response is a Javascript function returning a object containing the expanded HTML. We parse
+		// the function, and get the substring that contains only the HTML. The HTML is parsed and data is extracted.
 		c.OnResponse(func(r *colly.Response) {
 			if r.Headers.Get("content-type") == "application/javascript; charset=utf-8" {
 				body := string(r.Body)
@@ -207,7 +211,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 				if err != nil {
 					fmt.Println("Error on response")
 				}
-				albumType := body[strings.Index(body, "('")+2] // string after javascript function name
+				albumType := body[strings.Index(body, "('")+2] // char after javascript function header
 				albumTableIndex := slices.IndexFunc(query.albumTables, func(table AlbumTable) bool {
 					return table.t == rune(albumType)
 				})
@@ -232,6 +236,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	return rAlbumlistColWidths[:], rAlbumlistColTitles[:]
 }
 
+// https://rateyourmusic.com/release/album/the-velvet-underground-nico/the-velvet-underground-and-nico/
 func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 	c := createCrawler(r.Delay, r.Cookies)
 	data.Metadata = orderedmap.New[string, string]()
@@ -240,7 +245,6 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 		image_url := h.ChildAttr("img", "src")
 		h.Request.Visit("https:" + image_url)
 	})
-
 	c.OnResponse(func(r *colly.Response) {
 		if r.Headers.Get("content-type") == "image/jpg" || r.Headers.Get("content-type") == "image/png" {
 			var err error
@@ -250,7 +254,6 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 			}
 		}
 	})
-
 	c.OnHTML("table.album_info > tbody > tr", func(h *colly.HTMLElement) {
 		key := h.ChildText("th")
 		value := strings.Join(strings.Fields(strings.ReplaceAll(h.ChildText("td"), "\n", "")), " ")
@@ -262,7 +265,6 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 		albumId := h.Attr("value")
 		data.Metadata.Set("ID", albumId[6:len(albumId)-1])
 	})
-
 	c.OnHTML("div#column_container_left div.section_tracklisting ul#tracks", func(h *colly.HTMLElement) {
 		h.ForEach("li.track", func(_ int, h *colly.HTMLElement) {
 			if len(h.ChildText("span.tracklist_total")) > 0 {
@@ -276,7 +278,6 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 			}
 		})
 	})
-
 	c.Visit(r.Link)
 	c.Wait()
 	return rAlbumColWidths[:], rAlbumColTitles[:]
@@ -290,6 +291,8 @@ func (r *RateYourMusic) SetLink(link string) {
 	r.Link = link
 }
 
+// https://rateyourmusic.com/release/album/the-velvet-underground-nico/the-velvet-underground-and-nico/reviews/1/
+// Recursively scrape all reviews (may generate problems for very popular albums)
 func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
 	c := createCrawler(r.Delay, r.Cookies)
 	data.Links = make([]string, 0)
@@ -297,14 +300,12 @@ func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
 	c.OnHTML("span.navspan a.navlinknext", func(h *colly.HTMLElement) {
 		h.Request.Visit(h.Attr("href"))
 	})
-
 	c.OnHTML("div.review > div.review_header ", func(h *colly.HTMLElement) {
 		user := h.ChildText("span.review_user")
 		date := h.ChildText("span.review_date")
 		rating := strings.Split(h.ChildAttr("span.review_rating > img", "alt"), " ")[0]
 		data.Rows = append(data.Rows, []string{user, date, rating})
 	})
-
 	c.OnHTML("div.review > div.review_body ", func(h *colly.HTMLElement) {
 		data.Links = append(data.Links, h.ChildText("span.rendered_text"))
 	})
@@ -346,6 +347,7 @@ var loginForm = map[string][]byte{
 	"action":           []byte("Login"),
 }
 
+// For reference, inspect https://rateyourmusic.com/account/login
 func (r *RateYourMusic) Login() {
 	user, password, err := credentials()
 	if err != nil {
@@ -360,7 +362,6 @@ func (r *RateYourMusic) Login() {
 	c.OnError(func(_ *colly.Response, err error) {
 		fmt.Println("Something went wrong:", err)
 	})
-
 	c.OnResponse(func(response *colly.Response) {
 		cookies := response.Headers.Values("Set-Cookie")
 		for _, cookieStr := range cookies {
@@ -368,7 +369,6 @@ func (r *RateYourMusic) Login() {
 			r.Cookies[cookie[0]] = cookie[1]
 		}
 	})
-
 	c.PostMultipart(LOGIN, loginForm)
 	c.Wait()
 }
@@ -391,7 +391,6 @@ func (r *RateYourMusic) sendRating(rating string, id string) {
 	c.OnResponse(func(r *colly.Response) {
 		fmt.Println(r.StatusCode, "Vote has been uploaded.")
 	})
-
 	c.OnError(func(_ *colly.Response, err error) {
 		fmt.Println("Something went wrong:", err)
 	})
