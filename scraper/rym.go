@@ -124,8 +124,8 @@ func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 	return rBandColWidths[:], rBandColTitles[:]
 }
 
-// In both cases, we are scraping table containing album data. However, the Jquery strings to retrieved the data
-// changes.
+// In both cases, we are scraping table containing album data. However, the Jquery strings to retrieve the data
+// from change on the type of album we want to find.
 // AlbumTable is a struct for extracting album data from a particular section (Album, EP, credit...)
 // tableQuery defines the wrapper (also a table) of all the tables of a page.
 // hasBio is just to decide if we want to look for the artist's bio (which exists only in the main page).
@@ -151,7 +151,7 @@ var mainPage albumQuery = albumQuery{
 
 // https://rateyourmusic.com/artist/the-velvet-underground
 // https://rateyourmusic.com/artist/the-velvet-underground/credits/
-// r.Expand does what pressing the "showing all" button does. It is applied to all the main artist page section.
+// r.Expand does what pressing the "showing all" button does. It is applied to all the section of the main artist page.
 func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 	var query albumQuery
 	var visitLink string
@@ -201,7 +201,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 				h.Request.PostMultipart("https://rateyourmusic.com/httprequest/ExpandDiscographySection", expandForm)
 			}
 		})
-		// Body of the response is a Javascript function returning a object containing the expanded HTML. We parse
+		// Body of the response is a Javascript function, which returns a object containing the expanded HTML. We parse
 		// the function, and get the substring that contains only the HTML. The HTML is parsed and data is extracted.
 		c.OnResponse(func(r *colly.Response) {
 			if r.Headers.Get("content-type") == "application/javascript; charset=utf-8" {
