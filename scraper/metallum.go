@@ -39,7 +39,7 @@ type Metallum struct {
 	Link string
 }
 
-// Metadata contains info like country of origin for band page and label for albums.
+// Metadata contains info (country of origin, genre, themes...) for band page and label for albums.
 // For reference inspect:
 // https://www.metal-archives.com/bands/Emperor/30
 // https://www.metal-archives.com/albums/Emperor/Anthems_to_the_Welkin_at_Dusk/92
@@ -129,7 +129,7 @@ func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
 		})
 		data.Rows = append(data.Rows, row[:])
 	})
-	// Get band id (useful if you want to check similar bands later)
+	// Get band id (useful for checking similar bands later)
 	c.OnHTML("h2.band_name > a", func(h *colly.HTMLElement) {
 		data.Metadata.Set("ID", path.Base(h.Attr("href")))
 	})
@@ -197,7 +197,7 @@ func (m *Metallum) Credits() *orderedmap.OrderedMap[string, string] {
 	credits := orderedmap.New[string, string]()
 
 	c.OnHTML("div#album_members_lineup table.lineupTable > tbody > tr.lineupRow", func(h *colly.HTMLElement) {
-		artist := h.ChildText("td:has(a)")
+		artist := strings.ReplaceAll(h.ChildText("td:has(a)"), "\n", " ") // If it has a RIP remove new line
 		credit := h.ChildText("td:not(:has(a))")
 		credits.Set(artist, credit)
 	})
