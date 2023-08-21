@@ -51,6 +51,8 @@ musicScraper [OPTIONS] "name_of_artist"
 
 -credits
         Display RYM credits
+-expand
+        Expand RYM albums (Equivalent of pressing "show all")
 -website string
         Desired Website ('metallum' or 'rym')
 ```
