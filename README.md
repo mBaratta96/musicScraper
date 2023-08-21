@@ -19,7 +19,8 @@ Archives), with nice album ASCII art.
 
 ## Usage
 
-Clone the repo and build the package with `go build`, with Go version >= 1.18. Put the binary file in `~/.local/bin`.
+Clone the repo and build the package with `go build`, with Go version >= 1.21.
+Put the binary file in `~/.local/bin`.
 
 
 Optionally, create a `config.json` file in `~/.config/musicScraper` and write:
