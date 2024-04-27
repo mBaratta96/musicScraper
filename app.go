@@ -146,8 +146,23 @@ func main() {
 	}
 	configFilePath := filepath.Join(configFolder, "musicScraper", "config.json")
 
+	cacheFolder, err := os.UserCacheDir()
+	if err != nil {
+		fmt.Println("Cannot determine cache folder")
+		os.Exit(1)
+	}
+
 	if *website == "metallum" {
-		app(&scraper.Metallum{Link: search})
+		m := &scraper.Metallum{}
+		m.Link = search
+		cookieFilePath := filepath.Join(cacheFolder, "musicScraper", "metallumCookie.json")
+		if _, err := os.Stat(cookieFilePath); os.IsNotExist(err) {
+			fmt.Println("You must save a metallumCookie.json file in the .cache folder in order to use MetalArchives scraper")
+			os.Exit(1)
+		} else {
+			m.Cookies, _ = scraper.ReadCookie(cookieFilePath)
+		}
+		app(m)
 	}
 	if *website == "rym" {
 		r := &scraper.RateYourMusic{}
@@ -157,12 +172,7 @@ func main() {
 		config, _ := scraper.ReadUserConfiguration(configFilePath)
 		r.Delay = config.Delay
 		if config.Authenticate {
-			cacheFolder, err := os.UserCacheDir()
-			if err != nil {
-				fmt.Println("Cannot determine cache folder")
-				os.Exit(1)
-			}
-			cookieFilePath := filepath.Join(cacheFolder, "musicScraper", "cookie.json")
+			cookieFilePath := filepath.Join(cacheFolder, "musicScraper", "rymCookie.json")
 			if _, err := os.Stat(cookieFilePath); os.IsNotExist(err) {
 				r.Login()
 				if config.SaveCookies {

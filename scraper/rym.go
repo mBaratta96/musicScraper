@@ -22,7 +22,7 @@ const (
 	LOGIN         string = "https://rateyourmusic.com/httprequest/Login"
 	RATING        string = "https://rateyourmusic.com/httprequest/CatalogSetRating"
 	USERDATA      string = "https://rateyourmusic.com/user_albums_export?album_list_id="
-	USERAGENT     string = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+	USERAGENT     string = "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0"
 )
 
 var (
@@ -60,28 +60,23 @@ type albumQuery struct {
 
 // RYM requires an async crawler with delay limitation. Otherwise your IP will be banned.
 func createCrawler(delay int, cookies map[string]string) *colly.Collector {
-	c := colly.NewCollector(colly.Async(true), colly.UserAgent(USERAGENT))
+	var c *colly.Collector
 	if delay > 0 {
+		c = colly.NewCollector(colly.Async(true), colly.UserAgent(USERAGENT))
 		c.Limit(&colly.LimitRule{
 			DomainGlob:  "*",
 			Parallelism: 4,
 			RandomDelay: time.Duration(delay) * time.Second,
 		})
+	} else {
+		c = colly.NewCollector(colly.UserAgent(USERAGENT))
 	}
 	if cookies != nil {
 		c.OnRequest(func(r *colly.Request) {
-			r.Headers.Set("Cookie", createCookieHeader(cookies))
+			r.Headers.Set("cookie", createCookieHeader(cookies))
 		})
 	}
 	return c
-}
-
-func createCookieHeader(cookies map[string]string) string {
-	cookieString := make([]string, 0)
-	for name, value := range cookies {
-		cookieString = append(cookieString, fmt.Sprintf("%s=%s", name, value))
-	}
-	return strings.Join(cookieString, "; ")
 }
 
 func extractAlbumData(h *colly.HTMLElement, query string, section string, rows *[][]string, links *[]string) {

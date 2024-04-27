@@ -1,9 +1,11 @@
 package scraper
 
 import (
+	"fmt"
 	"image"
+	"strings"
 
-	"github.com/wk8/go-ordered-map/v2"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 type ColumnData struct {
@@ -69,4 +71,12 @@ func computeColumnWidth(maxWidth []int, colTitles []string, rows [][]string) []i
 		}
 	}
 	return widths
+}
+
+func createCookieHeader(cookies map[string]string) string {
+	cookieString := make([]string, 0)
+	for name, value := range cookies {
+		cookieString = append(cookieString, fmt.Sprintf("%s=%s", name, value))
+	}
+	return strings.Join(cookieString, "; ")
 }

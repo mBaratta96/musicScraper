@@ -45,6 +45,13 @@ Optionally, create a `config.json` file in `~/.config/musicScraper` and write:
   folder. If disabled, the app will always ask for username and password each time
   `authenticate` is `true`.
 
+## IMPORTANT: Cloudflare in Metal Archives
+
+Since Metal Archives has implemented Cloudflare protection, you must export
+MetalArchives cookies in a `~/.cache/musicScraper/metallumCookie.json` file.
+You have many options to export your cookies, one of them might be
+[Cookie-Editor](https://cookie-editor.com/)
+
 ```shell
 
 musicScraper [OPTIONS] "name_of_artist"
