@@ -41,7 +41,7 @@ type RateYourMusic struct {
 	Cookies    map[string]string
 	GetCredits bool
 	Expand     bool
-    UserAgent string
+	UserAgent  string
 }
 
 type AlbumTable struct {
@@ -268,7 +268,7 @@ func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
 				data.Metadata.Set("Total Length", value[len(value)-1])
 			} else {
 				number := h.ChildText("span.tracklist_num")
-				title := h.ChildText("span[itemprop=name] span.rendered_text")
+				title := h.ChildText("span.tracklist_title a.song")
 				duration := h.ChildText("span.tracklist_duration")
 				data.Rows = append(data.Rows, []string{number, title, duration})
 			}
@@ -353,20 +353,20 @@ func (r *RateYourMusic) Login() {
 	loginForm["password"] = []byte(password)
 
 	//r.Cookies = make(map[string]string)
-    r.Cookies["username"] = user
+	r.Cookies["username"] = user
 	c := createCrawler(r.Delay, r.Cookies, r.UserAgent)
 
 	c.OnError(func(_ *colly.Response, err error) {
 		fmt.Println("Something went wrong:", err)
 	})
-    c.OnRequest(func (r *colly.Request)  {
-       fmt.Println(r.Headers) 
-    })
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println(r.Headers)
+	})
 	c.OnResponse(func(response *colly.Response) {
 		cookies := response.Headers.Values("Set-Cookie")
 		for _, cookieStr := range cookies {
 			cookie := strings.Split(strings.Split(cookieStr, "; ")[0], "=")
-            fmt.Println(cookie)
+			fmt.Println(cookie)
 			r.Cookies[cookie[0]] = cookie[1]
 		}
 	})
