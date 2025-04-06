@@ -155,12 +155,26 @@ func main() {
 	if *website == "metallum" {
 		m := &scraper.Metallum{}
 		m.Link = search
+		config, _ := scraper.ReadUserConfiguration(configFilePath)
 		cookieFilePath := filepath.Join(cacheFolder, "musicScraper", "metallumCookie.json")
 		if _, err := os.Stat(cookieFilePath); os.IsNotExist(err) {
-			fmt.Println("You must save a metallumCookie.json file in the .cache folder in order to use MetalArchives scraper")
-			os.Exit(1)
+			m.Cookies, m.UserAgent = scraper.GetCloudflareCookies(config.FlaresolverrUrl, "http://www.metal-archives.com")
+			if config.SaveCookies {
+				cacheCookiesAndUser := map[string]string{"user_agent": m.UserAgent}
+				for k, v := range m.Cookies {
+					cacheCookiesAndUser[k] = v
+				}
+				scraper.SaveCookie(cacheCookiesAndUser, cookieFilePath)
+			}
 		} else {
-			m.Cookies, _ = scraper.ReadCookie(cookieFilePath)
+			cacheCookiesAndUser, _ := scraper.ReadCookie(cookieFilePath)
+			m.UserAgent = cacheCookiesAndUser["user_agent"]
+			m.Cookies = map[string]string{}
+			for k, v := range cacheCookiesAndUser {
+				if k != "user_agent" {
+					m.Cookies[k] = v
+				}
+			}
 		}
 		app(m)
 	}
@@ -174,12 +188,24 @@ func main() {
 		if config.Authenticate {
 			cookieFilePath := filepath.Join(cacheFolder, "musicScraper", "rymCookie.json")
 			if _, err := os.Stat(cookieFilePath); os.IsNotExist(err) {
+				r.Cookies, r.UserAgent = scraper.GetCloudflareCookies(config.FlaresolverrUrl, "http://www.rateyourmusic.com")
 				r.Login()
 				if config.SaveCookies {
-					scraper.SaveCookie(r.Cookies, cookieFilePath)
+					cacheCookiesAndUser := map[string]string{"user_agent": r.UserAgent}
+					for k, v := range r.Cookies {
+						cacheCookiesAndUser[k] = v
+					}
+					scraper.SaveCookie(cacheCookiesAndUser, cookieFilePath)
 				}
 			} else {
-				r.Cookies, _ = scraper.ReadCookie(cookieFilePath)
+				cacheCookiesAndUser, _ := scraper.ReadCookie(cookieFilePath)
+				r.UserAgent = cacheCookiesAndUser["user_agent"]
+				r.Cookies = map[string]string{}
+				for k, v := range cacheCookiesAndUser {
+					if k != "user_agent" {
+						r.Cookies[k] = v
+					}
+				}
 			}
 		}
 		app(r)

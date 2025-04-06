@@ -22,7 +22,6 @@ const (
 	LOGIN         string = "https://rateyourmusic.com/httprequest/Login"
 	RATING        string = "https://rateyourmusic.com/httprequest/CatalogSetRating"
 	USERDATA      string = "https://rateyourmusic.com/user_albums_export?album_list_id="
-	USERAGENT     string = "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0"
 )
 
 var (
@@ -42,6 +41,7 @@ type RateYourMusic struct {
 	Cookies    map[string]string
 	GetCredits bool
 	Expand     bool
+    UserAgent string
 }
 
 type AlbumTable struct {
@@ -59,17 +59,18 @@ type albumQuery struct {
 }
 
 // RYM requires an async crawler with delay limitation. Otherwise your IP will be banned.
-func createCrawler(delay int, cookies map[string]string) *colly.Collector {
+func createCrawler(delay int, cookies map[string]string, userAgent string) *colly.Collector {
 	var c *colly.Collector
+
 	if delay > 0 {
-		c = colly.NewCollector(colly.Async(true), colly.UserAgent(USERAGENT))
+		c = colly.NewCollector(colly.Async(true), colly.UserAgent(userAgent))
 		c.Limit(&colly.LimitRule{
 			DomainGlob:  "*",
 			Parallelism: 4,
 			RandomDelay: time.Duration(delay) * time.Second,
 		})
 	} else {
-		c = colly.NewCollector(colly.UserAgent(USERAGENT))
+		c = colly.NewCollector(colly.UserAgent(userAgent))
 	}
 	if cookies != nil {
 		c.OnRequest(func(r *colly.Request) {
@@ -100,7 +101,7 @@ func extractAlbumData(h *colly.HTMLElement, query string, section string, rows *
 // https://rateyourmusic.com/search?searchterm=velvet%20underground&searchtype=a
 func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 	data.Links = make([]string, 0)
-	c := createCrawler(r.Delay, r.Cookies)
+	c := createCrawler(r.Delay, r.Cookies, r.UserAgent)
 
 	c.OnHTML("table tr.infobox", func(h *colly.HTMLElement) {
 		band_link := DOMAIN + h.ChildAttr("td:not(.page_search_img_cell) a.searchpage", "href")
@@ -160,7 +161,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 		query = mainPage
 		visitLink = r.Link
 	}
-	c := createCrawler(r.Delay, r.Cookies)
+	c := createCrawler(r.Delay, r.Cookies, r.UserAgent)
 	c.OnHTML("div#column_container_right div.section_artist_image > a > div", func(h *colly.HTMLElement) {
 		data.Metadata.Set("Top Album", h.Text)
 	})
@@ -233,7 +234,7 @@ func (r *RateYourMusic) AlbumList(data *ScrapedData) ([]int, []string) {
 
 // https://rateyourmusic.com/release/album/the-velvet-underground-nico/the-velvet-underground-and-nico/
 func (r *RateYourMusic) Album(data *ScrapedData) ([]int, []string) {
-	c := createCrawler(r.Delay, r.Cookies)
+	c := createCrawler(r.Delay, r.Cookies, r.UserAgent)
 	data.Metadata = orderedmap.New[string, string]()
 
 	c.OnHTML("div#column_container_left div.page_release_art_frame", func(h *colly.HTMLElement) {
@@ -289,7 +290,7 @@ func (r *RateYourMusic) SetLink(link string) {
 // https://rateyourmusic.com/release/album/the-velvet-underground-nico/the-velvet-underground-and-nico/reviews/1/
 // Recursively scrape all reviews (may generate problems for very popular albums)
 func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
-	c := createCrawler(r.Delay, r.Cookies)
+	c := createCrawler(r.Delay, r.Cookies, r.UserAgent)
 	data.Links = make([]string, 0)
 
 	c.OnHTML("span.navspan a.navlinknext", func(h *colly.HTMLElement) {
@@ -311,7 +312,7 @@ func (r *RateYourMusic) ReviewsList(data *ScrapedData) ([]int, []string) {
 }
 
 func (r *RateYourMusic) Credits() *orderedmap.OrderedMap[string, string] {
-	c := createCrawler(r.Delay, r.Cookies)
+	c := createCrawler(r.Delay, r.Cookies, r.UserAgent)
 	credits := orderedmap.New[string, string]()
 
 	c.OnHTML("div.section_credits > ul.credits", func(h *colly.HTMLElement) {
@@ -351,16 +352,21 @@ func (r *RateYourMusic) Login() {
 	loginForm["user"] = []byte(user)
 	loginForm["password"] = []byte(password)
 
-	r.Cookies = make(map[string]string)
-	c := createCrawler(r.Delay, r.Cookies)
+	//r.Cookies = make(map[string]string)
+    r.Cookies["username"] = user
+	c := createCrawler(r.Delay, r.Cookies, r.UserAgent)
 
 	c.OnError(func(_ *colly.Response, err error) {
 		fmt.Println("Something went wrong:", err)
 	})
+    c.OnRequest(func (r *colly.Request)  {
+       fmt.Println(r.Headers) 
+    })
 	c.OnResponse(func(response *colly.Response) {
 		cookies := response.Headers.Values("Set-Cookie")
 		for _, cookieStr := range cookies {
 			cookie := strings.Split(strings.Split(cookieStr, "; ")[0], "=")
+            fmt.Println(cookie)
 			r.Cookies[cookie[0]] = cookie[1]
 		}
 	})
@@ -375,7 +381,7 @@ var ratingForm = map[string][]byte{
 }
 
 func (r *RateYourMusic) sendRating(rating string, id string) {
-	c := createCrawler(r.Delay, r.Cookies)
+	c := createCrawler(r.Delay, r.Cookies, r.UserAgent)
 
 	ratingForm["assoc_id"] = []byte(id)
 	ratingForm["rating"] = []byte(rating)

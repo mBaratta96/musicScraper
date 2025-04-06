@@ -14,9 +14,10 @@ import (
 )
 
 type ConfigData struct {
-	Delay        int  `json:"request_delay"`
-	Authenticate bool `json:"authenticate"`
-	SaveCookies  bool `json:"save_cookies"`
+	Delay           int    `json:"request_delay"`
+	Authenticate    bool   `json:"authenticate"`
+	SaveCookies     bool   `json:"save_cookies"`
+	FlaresolverrUrl string `json:"flaresolverr_url"`
 }
 
 type RYMCookie map[string]string

@@ -1,9 +1,16 @@
 package scraper
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"image"
+	"io"
+	"log"
+	"net/http"
 	"strings"
+
+	//"github.com/gocolly/colly"
 
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
@@ -11,6 +18,26 @@ import (
 type ColumnData struct {
 	Title []string
 	Width []int
+}
+
+type Cookie struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type Solution struct {
+	Url       string   `json:"url"`
+	Cookies   []Cookie `json:"cookies"`
+	UserAgent string   `json:"userAgent"`
+}
+
+type FlaresolverrData struct {
+	Status         string   `json:"status"`
+	Message        string   `json:"message"`
+	Solution       Solution `json:"solution"`
+	StartTimestamp int      `json:"startTimestamp"`
+	EndTimestamp   int      `json:"endtimestamp"`
+	Version        string   `json:"version"`
 }
 
 type ScrapedData struct {
@@ -31,7 +58,7 @@ type Scraper interface {
 	StyleColor() string
 	SetLink(string)
 	ListChoices() []string
-	AdditionalFunctions() map[string]interface{}
+	AdditionalFunctions() map[string]any
 }
 
 var listMenuDefaultChoices = []string{"Go back", "Show credits", "Show reviews"}
@@ -79,4 +106,37 @@ func createCookieHeader(cookies map[string]string) string {
 		cookieString = append(cookieString, fmt.Sprintf("%s=%s", name, value))
 	}
 	return strings.Join(cookieString, "; ")
+}
+
+func GetCloudflareCookies(flaresolverrUrl string, url string) (map[string]string, string) {
+	// c := createCrawler(0, nil)
+	cloudflareData := map[string]string{}
+	payload := map[string]string{
+		"url":        fmt.Sprintf("%s", url),
+		"cmd":        "request.get",
+		"maxTimeout": "60000",
+	}
+	postBody, _ := json.Marshal(payload)
+	responseBody := bytes.NewBuffer(postBody)
+	//Leverage Go's HTTP Post function to make request
+	resp, err := http.Post(fmt.Sprintf("%s/v1", flaresolverrUrl), "application/json", responseBody)
+	//Handle Error
+	if err != nil {
+		log.Fatalf("An Error Occured %v", err)
+	}
+	defer resp.Body.Close()
+	//Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	var responsePayload FlaresolverrData
+	err = json.Unmarshal(body, &responsePayload)
+	if err != nil {
+		panic("Error in Flaresolverr response: ")
+	}
+	for _, cookie := range responsePayload.Solution.Cookies {
+		cloudflareData[cookie.Name] = cookie.Value
+	}
+	return cloudflareData, responsePayload.Solution.UserAgent
 }

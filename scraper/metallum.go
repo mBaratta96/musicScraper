@@ -36,8 +36,9 @@ var (
 )
 
 type Metallum struct {
-	Link    string
-	Cookies map[string]string
+	Link      string
+	Cookies   map[string]string
+	UserAgent string
 }
 
 // Metadata contains info (country of origin, genre, themes...) for band page and label for albums.
@@ -60,8 +61,13 @@ func getMetadata(h *colly.HTMLElement, metadata *orderedmap.OrderedMap[string, s
 // Metallum search page renders the result of a query from a JSON payload.
 // https://www.metal-archives.com/search?searchString=emperor&type=band_name
 func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
-	c := createCrawler(0, m.Cookies)
+	c := createCrawler(0, m.Cookies, m.UserAgent)
 	data.Links = make([]string, 0)
+
+	// c.OnRequest(func (r* colly.Request)  {
+	//    println("SENDING REQUEST")
+	//         fmt.Println(r.Headers)
+	// })
 
 	c.OnResponse(func(r *colly.Response) {
 		var response searchResponse
@@ -83,13 +89,13 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 			data.Rows = append(data.Rows, []string{band, genre, country})
 		}
 	})
-	c.Visit(fmt.Sprintf("https://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Link))
+	c.Visit(fmt.Sprintf("http://www.metal-archives.com/search/ajax-band-search/?field=name&query=%s", m.Link))
 	return mBandColWidths[:], mAlbumColTitles[:]
 }
 
 // https://www.metal-archives.com/bands/Emperor/30
 func (m *Metallum) AlbumList(data *ScrapedData) ([]int, []string) {
-	c := createCrawler(0, m.Cookies)
+	c := createCrawler(0, m.Cookies, m.UserAgent)
 	data.Links = make([]string, 0)
 	data.Metadata = orderedmap.New[string, string]()
 
@@ -118,7 +124,7 @@ func (m *Metallum) AlbumList(data *ScrapedData) ([]int, []string) {
 
 // https://www.metal-archives.com/albums/Emperor/Anthems_to_the_Welkin_at_Dusk/92
 func (m *Metallum) Album(data *ScrapedData) ([]int, []string) {
-	c := createCrawler(0, m.Cookies)
+	c := createCrawler(0, m.Cookies, m.UserAgent)
 	data.Links = make([]string, 0)
 	data.Metadata = orderedmap.New[string, string]()
 
@@ -164,7 +170,7 @@ func (m *Metallum) SetLink(link string) {
 
 // https://www.metal-archives.com/albums/Emperor/Anthems_to_the_Welkin_at_Dusk/92
 func (m *Metallum) ReviewsList(data *ScrapedData) ([]int, []string) {
-	c := createCrawler(0, m.Cookies)
+	c := createCrawler(0, m.Cookies, m.UserAgent)
 	data.Links = make([]string, 0)
 
 	c.OnHTML("div#album_tabs_reviews tr.even, div#album_tabs_reviews tr.odd", func(h *colly.HTMLElement) {
@@ -193,7 +199,7 @@ func (m *Metallum) ReviewsList(data *ScrapedData) ([]int, []string) {
 
 // https://www.metal-archives.com/albums/Emperor/Anthems_to_the_Welkin_at_Dusk/92
 func (m *Metallum) Credits() *orderedmap.OrderedMap[string, string] {
-	c := createCrawler(0, m.Cookies)
+	c := createCrawler(0, m.Cookies, m.UserAgent)
 	credits := orderedmap.New[string, string]()
 
 	c.OnHTML("div#album_members_lineup table.lineupTable > tbody > tr.lineupRow", func(h *colly.HTMLElement) {
@@ -207,7 +213,7 @@ func (m *Metallum) Credits() *orderedmap.OrderedMap[string, string] {
 }
 
 func (m *Metallum) similarArtists(data *ScrapedData) ([]int, []string) {
-	c := createCrawler(0, m.Cookies)
+	c := createCrawler(0, m.Cookies, m.UserAgent)
 	data.Links = make([]string, 0)
 
 	c.OnHTML("table#artist_list tbody tr[id*='recRow']", func(h *colly.HTMLElement) {

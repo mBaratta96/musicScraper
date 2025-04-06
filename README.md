@@ -28,8 +28,9 @@ Optionally, create a `config.json` file in `~/.config/musicScraper` and write:
 ```json 
 {
     "request_delay": 1,
-    "authenticate": true,
-    "save_cookies": true
+    "authenticate": true, 
+    "save_cookies": true, 
+    "flaresolverr_url": "url of Flaresolverr server (more of that later)"
 }
 ```
 
@@ -45,12 +46,11 @@ Optionally, create a `config.json` file in `~/.config/musicScraper` and write:
   folder. If disabled, the app will always ask for username and password each time
   `authenticate` is `true`.
 
-## IMPORTANT: Cloudflare in Metal Archives
+## IMPORTANT: Cloudflare bypass 
 
-Since Metal Archives has implemented Cloudflare protection, you must export
-MetalArchives cookies in a `~/.cache/musicScraper/metallumCookie.json` file.
-You have many options to export your cookies, one of them might be
-[Cookie-Editor](https://cookie-editor.com/)
+Since Metal Archives and RateyourMusic has implemented Cloudflare protection, you must set up
+a [Flaresolverr](https://github.com/FlareSolverr/FlareSolverr) instance running along this app. You must set the url of this server in the configuration file.
+
 
 ```shell
 
