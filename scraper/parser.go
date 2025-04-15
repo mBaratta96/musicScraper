@@ -26,9 +26,12 @@ type JsonData interface {
 	ConfigData | RYMCookie
 }
 
-func ReadUserConfiguration(path string) (ConfigData, error) {
+func ReadUserConfiguration() (ConfigData, error) {
+	path := GetConfigFolder()
 	return readJsonFile[ConfigData](path)
 }
+
+type Parser struct{}
 
 func credentials() (string, string, error) {
 	reader := bufio.NewReader(os.Stdin)
@@ -88,4 +91,22 @@ func SaveCookie(cookies map[string]string, path string) {
 		panic(err)
 	}
 	f.Write(as_json)
+}
+
+func GetConfigFolder() string {
+	configFolder, err := os.UserConfigDir()
+	if err != nil {
+		fmt.Println("Cannot determine config folder")
+		os.Exit(1)
+	}
+	return filepath.Join(configFolder, "musicScraper", "config.json")
+}
+
+func GetCookieFilePath(website string) string {
+	cacheFolder, err := os.UserCacheDir()
+	if err != nil {
+		fmt.Println("Cannot determine cache folder")
+		os.Exit(1)
+	}
+	return filepath.Join(cacheFolder, "musicScraper", fmt.Sprintf("%s_cookie.json", website))
 }

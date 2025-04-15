@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 	"scraper"
 	"strconv"
 
@@ -139,24 +138,11 @@ func main() {
 	}
 	search := flag.Arg(0)
 
-	configFolder, err := os.UserConfigDir()
-	if err != nil {
-		fmt.Println("Cannot determine config folder")
-		os.Exit(1)
-	}
-	configFilePath := filepath.Join(configFolder, "musicScraper", "config.json")
-
-	cacheFolder, err := os.UserCacheDir()
-	if err != nil {
-		fmt.Println("Cannot determine cache folder")
-		os.Exit(1)
-	}
-
 	if *website == "metallum" {
 		m := &scraper.Metallum{}
 		m.Link = search
-		config, _ := scraper.ReadUserConfiguration(configFilePath)
-		cookieFilePath := filepath.Join(cacheFolder, "musicScraper", "metallumCookie.json")
+		config, _ := scraper.ReadUserConfiguration()
+		cookieFilePath := scraper.GetCookieFilePath("metallum")
 		if _, err := os.Stat(cookieFilePath); os.IsNotExist(err) {
 			m.Cookies, m.UserAgent = scraper.GetCloudflareCookies(config.FlaresolverrUrl, "http://www.metal-archives.com")
 			if config.SaveCookies {
@@ -183,10 +169,10 @@ func main() {
 		r.Link = search
 		r.GetCredits = *rymCredits
 		r.Expand = *expand
-		config, _ := scraper.ReadUserConfiguration(configFilePath)
+		config, _ := scraper.ReadUserConfiguration()
 		r.Delay = config.Delay
 		if config.Authenticate {
-			cookieFilePath := filepath.Join(cacheFolder, "musicScraper", "rymCookie.json")
+			cookieFilePath := scraper.GetCookieFilePath("rym")
 			if _, err := os.Stat(cookieFilePath); os.IsNotExist(err) {
 				r.Cookies, r.UserAgent = scraper.GetCloudflareCookies(config.FlaresolverrUrl, "http://www.rateyourmusic.com")
 				r.Login()

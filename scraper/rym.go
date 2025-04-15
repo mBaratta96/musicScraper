@@ -61,7 +61,6 @@ type albumQuery struct {
 // RYM requires an async crawler with delay limitation. Otherwise your IP will be banned.
 func createCrawler(delay int, cookies map[string]string, userAgent string) *colly.Collector {
 	var c *colly.Collector
-
 	if delay > 0 {
 		c = colly.NewCollector(colly.Async(true), colly.UserAgent(userAgent))
 		c.Limit(&colly.LimitRule{
@@ -113,6 +112,23 @@ func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 		})
 		country := h.ChildAttr("span.ui_flag", "title")
 		data.Rows = append(data.Rows, []string{band_name, strings.Join(genres, "/"), country})
+	})
+
+	c.OnError(func(res *colly.Response, err error) {
+		if res.StatusCode == 403 {
+			config, _ := ReadUserConfiguration()
+			newCookies, newUserAgent := GetCloudflareCookies(config.FlaresolverrUrl, "http://www.rateyourmusic.com")
+			r.UserAgent = newUserAgent
+			cacheCookiesAndUser := map[string]string{"user_agent": newUserAgent}
+			for k, v := range newCookies {
+				cacheCookiesAndUser[k] = v
+				r.Cookies[k] = v
+			}
+			if config.SaveCookies {
+				cookieFilePath := GetCookieFilePath("rym")
+				SaveCookie(cacheCookiesAndUser, cookieFilePath)
+			}
+		}
 	})
 
 	c.Visit(fmt.Sprintf(DOMAIN+"/search?searchterm=%s&searchtype=a", url.PathEscape(r.Link)))
@@ -352,21 +368,17 @@ func (r *RateYourMusic) Login() {
 	loginForm["user"] = []byte(user)
 	loginForm["password"] = []byte(password)
 
-	//r.Cookies = make(map[string]string)
+	// r.Cookies = make(map[string]string)
 	r.Cookies["username"] = user
 	c := createCrawler(r.Delay, r.Cookies, r.UserAgent)
 
 	c.OnError(func(_ *colly.Response, err error) {
 		fmt.Println("Something went wrong:", err)
 	})
-	c.OnRequest(func(r *colly.Request) {
-		fmt.Println(r.Headers)
-	})
 	c.OnResponse(func(response *colly.Response) {
 		cookies := response.Headers.Values("Set-Cookie")
 		for _, cookieStr := range cookies {
 			cookie := strings.Split(strings.Split(cookieStr, "; ")[0], "=")
-			fmt.Println(cookie)
 			r.Cookies[cookie[0]] = cookie[1]
 		}
 	})
