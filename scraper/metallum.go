@@ -64,10 +64,22 @@ func (m *Metallum) SearchBand(data *ScrapedData) ([]int, []string) {
 	c := createCrawler(0, m.Cookies, m.UserAgent)
 	data.Links = make([]string, 0)
 
-	// c.OnRequest(func (r* colly.Request)  {
-	//    println("SENDING REQUEST")
-	//         fmt.Println(r.Headers)
-	// })
+	c.OnError(func(res *colly.Response, err error) {
+		if res.StatusCode == 403 {
+			config, _ := ReadUserConfiguration()
+			newCookies, newUserAgent := GetCloudflareCookies(config.FlaresolverrUrl, "http://www.rateyourmusic.com")
+			m.UserAgent = newUserAgent
+			cacheCookiesAndUser := map[string]string{"user_agent": newUserAgent}
+			for k, v := range newCookies {
+				cacheCookiesAndUser[k] = v
+				m.Cookies[k] = v
+			}
+			if config.SaveCookies {
+				cookieFilePath := GetCookieFilePath("rym")
+				SaveCookie(cacheCookiesAndUser, cookieFilePath)
+			}
+		}
+	})
 
 	c.OnResponse(func(r *colly.Response) {
 		var response searchResponse
