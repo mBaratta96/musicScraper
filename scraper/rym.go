@@ -119,12 +119,14 @@ func (r *RateYourMusic) SearchBand(data *ScrapedData) ([]int, []string) {
 			config, _ := ReadUserConfiguration()
 			newCookies, newUserAgent := GetCloudflareCookies(config.FlaresolverrUrl, "http://www.rateyourmusic.com")
 			r.UserAgent = newUserAgent
-			cacheCookiesAndUser := map[string]string{"user_agent": newUserAgent}
 			for k, v := range newCookies {
-				cacheCookiesAndUser[k] = v
 				r.Cookies[k] = v
 			}
 			if config.SaveCookies {
+				cacheCookiesAndUser := map[string]string{"user_agent": newUserAgent}
+				for k, v := range r.Cookies {
+					cacheCookiesAndUser[k] = v
+				}
 				cookieFilePath := GetCookieFilePath("rym")
 				SaveCookie(cacheCookiesAndUser, cookieFilePath)
 			}
